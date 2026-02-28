@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres-picking-packing:
+    image: postgres:16-alpine
+    container_name: picking-packing-db
+    environment:
+      POSTGRES_DB: wms_picking_packing
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - picking-packing-db-data:/var/lib/postgresql/data
+    networks:
+      - wms-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Picking & Packing Service
+  picking-packing-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: picking-packing-service
+    environment:
+      # Server
+      SERVER_PORT: 8092
+      
+      # Database
+      SPRING_DATASOURCE_URL_LOCAL: jdbc:postgresql://postgres-picking-packing:5432/wms_picking_packing
+      SPRING_DATASOURCE_USERNAME_LOCAL: postgres
+      SPRING_DATASOURCE_PASSWORD_LOCAL: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      
+      # Microservice URLs (adjust these to your actual service URLs)
+      ORDER_SERVICE_URL: http://order-service:8080
+      INVENTORY_SERVICE_URL: http://inventory-service:8081
+      WORKER_SERVICE_URL: http://worker-service:8083
+      
+      # JVM Options
+      JAVA_OPTS: "-Xms256m -Xmx512m"
+    ports:
+      - "8092:8092"
+    depends_on:
+      postgres-picking-packing:
+        condition: service_healthy
+    networks:
+      - wms-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8092/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+networks:
+  wms-network:
+    driver: bridge
+
+volumes:
+  picking-packing-db-data:

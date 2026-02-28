@@ -3,6 +3,9 @@ package com.wms.workforce_equipment_service.exception;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+/**
+ * Record representing a standardized error response.
+ */
 public record ErrorResponse(
         int status,
         String error,

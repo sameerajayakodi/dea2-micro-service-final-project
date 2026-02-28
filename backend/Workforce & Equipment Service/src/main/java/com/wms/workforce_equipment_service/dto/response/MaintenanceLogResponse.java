@@ -6,6 +6,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * DTO for representing a maintenance log response.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

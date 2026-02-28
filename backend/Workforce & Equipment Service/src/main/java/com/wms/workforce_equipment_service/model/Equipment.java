@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * Entity class representing equipment items.
+ */
 @Entity
 @Table(name = "equipment")
 @Data

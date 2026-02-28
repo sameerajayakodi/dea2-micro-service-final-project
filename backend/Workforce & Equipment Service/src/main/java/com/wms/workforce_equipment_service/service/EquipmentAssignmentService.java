@@ -15,6 +15,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service implementation for managing equipment assignments.
+ */
 @Service
 @RequiredArgsConstructor
 public class EquipmentAssignmentService implements IEquipmentAssignmentService {

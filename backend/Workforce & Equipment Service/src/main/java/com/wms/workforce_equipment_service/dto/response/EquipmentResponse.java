@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO for representing an equipment response.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

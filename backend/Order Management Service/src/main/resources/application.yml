@@ -10,7 +10,9 @@ spring:
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:acpt}
     driver-class-name: com.mysql.cj.jdbc.Driver
-
+#  export DB_USERNAME="admin"
+#  export DB_PASSWORD="Xiaomi123"
+#  export DB_URL="jdbc:mysql://wms-db.cnuco0c4i68g.us-east-2.rds.amazonaws.com:3306/order_service_db?useSSL=false&allowPublicKeyRetrieval=true"
   jpa:
     hibernate:
       ddl-auto: update

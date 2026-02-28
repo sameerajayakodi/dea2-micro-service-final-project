@@ -13,6 +13,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service implementation for managing maintenance logs.
+ */
 @Service
 @RequiredArgsConstructor
 public class MaintenanceLogService implements IMaintenanceLogService {

@@ -6,6 +6,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/**
+ * Repository interface for managing EquipmentAssignment entities.
+ */
 @Repository
 public interface EquipmentAssignmentRepository extends JpaRepository<EquipmentAssignment, Long> {
     List<EquipmentAssignment> findByEquipmentId(Long equipmentId);
