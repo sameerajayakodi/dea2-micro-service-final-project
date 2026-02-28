@@ -1,4 +1,17 @@
 .idea/workspace.xml
+
+# Compiled class file
+*.class
+*.lst
+
+# Log file
+*.log
+
+# Maven
+target/
+
+# Environment Variables
+.env
 .idea/IntelliLang.xml
 .idea/workspace.xml
 .idea/workspace.xml

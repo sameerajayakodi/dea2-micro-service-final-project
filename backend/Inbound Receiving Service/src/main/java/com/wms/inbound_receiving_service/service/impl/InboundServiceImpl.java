@@ -27,24 +27,31 @@ public class InboundServiceImpl implements InboundService {
     @Transactional
     public InboundResponseDTO receiveShipment(InboundRequestDTO request) {
         Supplier supplier = supplierRepository.findBySupplierName(request.getSupplierName())
-                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with name: " + request.getSupplierName()));
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found"));
 
         Product product = productRepository.findByProductName(request.getProductName())
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found with name: " + request.getProductName()));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
-        // 1. Create the Receipt Header
+        InboundShipment shipment = InboundShipment.builder()
+                .supplierName(request.getSupplierName())
+                .productName(request.getProductName())
+                .quantity(request.getQuantity())
+                .status("RECEIVED")
+                .build();
+        shipment = shipmentRepository.save(shipment);
+
         InboundReceipt receipt = new InboundReceipt();
         receipt.setSupplier(supplier);
         receipt.setReceiptDate(LocalDate.now());
-        receipt.setStatus("RECEIVED");
+        receipt.setStatus("COMPLETED");
+        receipt.setShipmentId(shipment.getId());
         receipt.setGrnNumber("GRN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
 
-        // 2. Create the Receipt Item
         InboundReceiptItem item = new InboundReceiptItem();
         item.setProduct(product);
         item.setQuantityReceived(request.getQuantity());
-        item.setReceipt(receipt);
-        receipt.getItems().add(item);
+        item.setQualityStatus("GOOD");
+        receipt.addItem(item);
 
         InboundReceipt saved = receiptRepository.save(receipt);
         return mapToResponse(saved);
@@ -53,37 +60,38 @@ public class InboundServiceImpl implements InboundService {
     @Override
     public List<InboundResponseDTO> getAllShipments() {
         return shipmentRepository.findAll().stream()
-                .map(shipment -> InboundResponseDTO.builder()
-                        .id(shipment.getId())
-                        .supplierName(shipment.getSupplierName())
-                        .productName(shipment.getProductName())
-                        .quantity(shipment.getQuantity())
-                        .status(shipment.getStatus())
+                .map(s -> InboundResponseDTO.builder()
+                        .id(s.getId())
+                        .supplierName(s.getSupplierName())
+                        .productName(s.getProductName())
+                        .quantity(s.getQuantity())
+                        .status(s.getStatus())
                         .build())
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<InboundReceiptDTO> getAllReceipts() {
-        return receiptRepository.findAllByOrderByReceiptDateDesc().stream()
-                .map(receipt -> InboundReceiptDTO.builder()
-                        .id(receipt.getReceiptId())
-                        .receiptNumber(receipt.getGrnNumber())
-                        .supplierName(receipt.getSupplier().getSupplierName())
-                        .receivedAt(receipt.getReceiptDate().atStartOfDay())
-                        .status(receipt.getStatus())
+        return receiptRepository.findAllWithSupplier().stream()
+                .map(r -> InboundReceiptDTO.builder()
+                        .id(r.getReceiptId())
+                        .receiptNumber(r.getGrnNumber())
+                        .supplierName(r.getSupplier().getSupplierName())
+                        .receivedAt(r.getReceiptDate().atStartOfDay())
+                        .status(r.getStatus())
                         .build())
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<InboundReceiptItemDTO> getAllReceiptItems() {
-        return receiptItemRepository.findAll().stream()
-                .map(item -> InboundReceiptItemDTO.builder()
-                        .id(item.getReceiptItemId())
-                        .receiptId(item.getReceipt().getReceiptId())
-                        .productName(item.getProduct().getProductName())
-                        .quantityReceived(item.getQuantityReceived())
+        return receiptItemRepository.findAllWithDetails().stream()
+                .map(i -> InboundReceiptItemDTO.builder()
+                        .id(i.getReceiptItemId())
+                        .receiptId(i.getReceipt().getReceiptId())
+                        .productName(i.getProduct().getProductName())
+                        .quantityReceived(i.getQuantityReceived())
+                        .condition(i.getQualityStatus()) // Map qualityStatus to condition
                         .build())
                 .collect(Collectors.toList());
     }

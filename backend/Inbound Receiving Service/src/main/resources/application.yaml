@@ -3,7 +3,7 @@ spring:
   application:
     name: inbound-receiving-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/inbound_service
+    url: jdbc:postgresql://inbound-service.cl2yyegaa9ek.ap-southeast-1.rds.amazonaws.com/inbound_service
     driver-class-name: org.postgresql.Driver
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}

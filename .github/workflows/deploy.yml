@@ -1,0 +1,45 @@
+name: Deploy Backend to Azure VM
+
+on:
+  push:
+    branches:
+      - deployment
+    paths:
+      - "backend/PickingPackingService/**"
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "corretto"
+
+      - name: Build with Maven
+        working-directory: "./backend/PickingPackingService"
+        run: mvn clean package -DskipTests
+
+      - name: Deploy and Restart Application
+        run: |
+          # 1. Create the deployment directory
+          mkdir -p /home/azureuser/backend-app
+
+          # 2. Copy the .jar specifically from the backend's target folder
+          cp 'backend/PickingPackingService/target/'*.jar /home/azureuser/backend-app/application.jar
+
+          # 3. Create the .env file with database credentials securely
+          echo "SPRING_DATASOURCE_URL_LOCAL=${{ secrets.SPRING_DATASOURCE_URL_LOCAL }}" > /home/azureuser/backend-app/.env
+          echo "SPRING_DATASOURCE_USERNAME_LOCAL=${{ secrets.SPRING_DATASOURCE_USERNAME_LOCAL }}" >> /home/azureuser/backend-app/.env
+          echo "SPRING_DATASOURCE_PASSWORD_LOCAL=${{ secrets.SPRING_DATASOURCE_PASSWORD_LOCAL }}" >> /home/azureuser/backend-app/.env
+
+          # 4. Secure the .env file so only the 'azureuser' user can read it
+          chmod 600 /home/azureuser/backend-app/.env
+
+          # 5. Restart the background service
+          sudo systemctl restart spring-backend.service

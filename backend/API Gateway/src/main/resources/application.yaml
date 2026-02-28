@@ -1,0 +1,58 @@
+server:
+  port: 8222
+
+spring:
+  application:
+    name: API-GATEWAY
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: workforce-service
+          uri: lb://WORKFORCE-EQUIPMENT-SERVICE
+          predicates:
+            - Path=/api/maintenance-logs/**,/api/equipment-assignments/**,/api/equipment-types/**,/api/equipments/**,/api/workers/**
+        - id: supplier-management-service
+          uri: lb://supplier-management-service
+          predicates:
+            - Path=/api/v1/suppliers/**,/api/v1/purchase-orders/**
+        - id: customer-management-service
+          uri: lb://customer-management-service
+          predicates:
+            - Path=/api/customers/**
+        - id: inbound-receiving-service
+          uri: lb://inbound-receiving-service
+          predicates:
+            - Path=/api/v1/inbound/**
+        - id: storage-location-service
+          uri: lb://Storage-Location-Service
+          predicates:
+            - Path=/api/locations/**
+        - id: dispatch-transportation-service
+          uri: lb://dispatch-transportation-service
+          predicates:
+            - Path=/api/dispatches/**
+        - id: inventory-management-service
+          uri: lb://inventory-management-service
+          predicates:
+            - Path=/api/inventory/**
+        - id: product-catalog-service
+          uri: lb://product-catalog-service
+          predicates:
+            - Path=/api/products/**
+        - id: picking-packing-service
+          uri: lb://Picking_Packing_Service
+          predicates:
+            - Path=/api/v1/pick-pack/**
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/v1/orders/**
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/

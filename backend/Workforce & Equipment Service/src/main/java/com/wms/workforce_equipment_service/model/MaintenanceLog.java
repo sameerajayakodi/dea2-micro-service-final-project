@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entity class representing maintenance logs for equipment.
+ */
 @Entity
 @Table(name = "maintenance_log")
 @Data

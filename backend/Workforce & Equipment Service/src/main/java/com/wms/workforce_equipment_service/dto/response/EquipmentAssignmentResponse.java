@@ -6,6 +6,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * DTO for representing an equipment assignment response.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

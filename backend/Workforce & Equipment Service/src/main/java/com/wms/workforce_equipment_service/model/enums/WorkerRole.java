@@ -1,5 +1,8 @@
 package com.wms.workforce_equipment_service.model.enums;
 
+/**
+ * Enum representing the roles available for workers.
+ */
 public enum WorkerRole {
     FORKLIFT_OPERATOR,
     PICKER,

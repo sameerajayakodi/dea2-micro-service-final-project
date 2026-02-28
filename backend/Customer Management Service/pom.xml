@@ -1,126 +1,138 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-         https://maven.apache.org/xsd/maven-4.0.0.xsd">
-
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-
-	<!-- ============================================================ -->
-	<!-- PARENT - Spring Boot 4.0.2 (Latest Stable - Verified)      -->
-	<!-- ============================================================ -->
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.0.2</version>
-		<relativePath/>
+		<version>4.0.3</version>
+		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-
-	<!-- ============================================================ -->
-	<!-- PROJECT INFORMATION                                          -->
-	<!-- ============================================================ -->
 	<groupId>com.wms</groupId>
-	<artifactId>customer-management-service</artifactId>
+	<artifactId>customer_management_service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<n>customer-management-service</n>
-	<description>Customer Management Service for Warehouse Management System</description>
-
-	<!-- ============================================================ -->
-	<!-- JAVA VERSION - Java 21 LTS                                  -->
-	<!-- ============================================================ -->
+	<name>customer_management_service</name>
+	<description>Customer Management Service</description>
+	<url/>
+	<licenses>
+		<license/>
+	</licenses>
+	<developers>
+		<developer/>
+	</developers>
+	<scm>
+		<connection/>
+		<developerConnection/>
+		<tag/>
+		<url/>
+	</scm>
 	<properties>
 		<java.version>21</java.version>
 	</properties>
-
-	<!-- ============================================================ -->
-	<!-- DEPENDENCIES (All Latest Stable Versions - Verified)        -->
-	<!-- ============================================================ -->
 	<dependencies>
-
-		<!-- ======================================================== -->
-		<!-- 1. SPRING BOOT WEB                                       -->
-		<!-- Purpose : Build REST APIs + Embedded Tomcat             -->
-		<!-- Includes: Spring MVC, Jackson, SLF4J + Logback          -->
-		<!-- ======================================================== -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
-
-		<!-- ======================================================== -->
-		<!-- 2. SPRING DATA JPA + HIBERNATE                           -->
-		<!-- Purpose : ORM for PostgreSQL database operations         -->
-		<!-- ======================================================== -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
-
-		<!-- ======================================================== -->
-		<!-- 3. POSTGRESQL DRIVER                                     -->
-		<!-- Purpose : Connect to PostgreSQL database                 -->
-		<!-- Scope   : runtime only                                   -->
-		<!-- ======================================================== -->
 		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<scope>runtime</scope>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-flyway</artifactId>
 		</dependency>
-
-		<!-- ======================================================== -->
-		<!-- 4. VALIDATION (Bean Validation)                          -->
-		<!-- Purpose : Input validation (@NotNull, @Email, etc.)      -->
-		<!-- ======================================================== -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
-
-		<!-- ======================================================== -->
-		<!-- 5. SWAGGER / OPENAPI 3 (SpringDoc)                       -->
-		<!-- Purpose : Auto-generate interactive API documentation     -->
-		<!-- Version : 3.0.1 (for Spring Boot 4.x)                    -->
-		<!-- Access  : http://localhost:8081/swagger-ui.html          -->
-		<!-- ======================================================== -->
 		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>3.0.1</version>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
 
-		<!-- ======================================================== -->
-		<!-- 6. SPRING BOOT DEVTOOLS                                  -->
-		<!-- Purpose : Auto-restart on code changes (dev mode only)   -->
-		<!-- ======================================================== -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
 			<scope>runtime</scope>
 			<optional>true</optional>
 		</dependency>
-
-		<!-- ======================================================== -->
-		<!-- 7. SPRING BOOT TEST                                      -->
-		<!-- Purpose : Complete testing framework                     -->
-		<!-- Includes: JUnit 5, Mockito, Spring Boot Test, MockMvc    -->
-		<!-- Scope   : test only                                      -->
-		<!-- ======================================================== -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
+			<artifactId>spring-boot-starter-actuator-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-flyway-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	<!-- Swagger/OpenAPI for Spring Boot -->
+	<dependency>
+		<groupId>org.springdoc</groupId>
+		<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+		<version>2.8.5</version>
+	</dependency>
 	</dependencies>
 
-	<!-- ============================================================ -->
-	<!-- BUILD CONFIGURATION                                          -->
-	<!-- ============================================================ -->
 	<build>
 		<plugins>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</path>
+						<path>
+							<groupId>org.springframework.boot</groupId>
+							<artifactId>spring-boot-configuration-processor</artifactId>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</exclude>
+					</excludes>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
