@@ -21,3 +21,5 @@ eureka:
   client:
     serviceUrl:
       defaultZone: http://13.53.95.161:8761/eureka/
+  instance:
+    prefer-ip-address: true
