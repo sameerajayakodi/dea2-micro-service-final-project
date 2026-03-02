@@ -36,4 +36,7 @@ public class Worker {
 
     @OneToMany(mappedBy = "worker", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EquipmentAssignment> assignments;
+
+    @OneToMany(mappedBy = "worker", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WorkerStorageLocation> storageLocations;
 }
