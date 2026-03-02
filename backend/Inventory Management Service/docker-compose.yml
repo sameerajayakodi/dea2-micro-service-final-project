@@ -17,14 +17,13 @@ services:
       - .env
     environment:
       DB_URL: "jdbc:postgresql://db:5432/${DB_NAME:-inventory_management_db}"
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      SERVER_PORT: ${SERVER_PORT}
-      # Ensure Eureka client config is available inside the container
-      EUREKA_URL: ${EUREKA_URL}
-      INSTANCE_IP: ${INSTANCE_IP}
+      DB_USERNAME: ${DB_USERNAME:-wms}
+      DB_PASSWORD: ${DB_PASSWORD:-wms}
+      SERVER_PORT: ${SERVER_PORT:-8010}
+      EUREKA_URL: ${EUREKA_URL:-http://131.163.97.60:8761/eureka/}
+      INSTANCE_IP: ${INSTANCE_IP:-35.88.199.189}
     ports:
-      - "${SERVER_PORT}:${SERVER_PORT}"
+      - "${SERVER_PORT:-8010}:${SERVER_PORT:-8010}"
     depends_on:
       - db
 
