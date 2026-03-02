@@ -40,19 +40,11 @@ const sections = [
   },
   {
     label: "Equipment",
-    description: "Track all equipment items",
+    description: "Track equipment items & manage categories",
     path: "/workforce_service/equipment",
     icon: <BuildIcon />,
     gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
     countKey: "equipment",
-  },
-  {
-    label: "Equipment Types",
-    description: "Manage equipment categories",
-    path: "/workforce_service/equipment-types",
-    icon: <CategoryIcon />,
-    gradient: "linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)",
-    countKey: "types",
   },
   {
     label: "Assignments",

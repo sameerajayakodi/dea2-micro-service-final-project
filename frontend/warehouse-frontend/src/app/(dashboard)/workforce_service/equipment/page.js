@@ -5,11 +5,13 @@ import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import BuildIcon from "@mui/icons-material/Build";
-import { Box, Button, Chip, IconButton, Tooltip } from "@mui/material";
+import CategoryIcon from "@mui/icons-material/Category";
+import { Box, Button, Chip, IconButton, Tab, Tabs, Tooltip } from "@mui/material";
 
 import PageHeader from "@/components/workforce/PageHeader";
 import DataTable from "@/components/workforce/DataTable";
 import EquipmentFormDialog from "@/components/workforce/EquipmentFormDialog";
+import EquipmentTypeFormDialog from "@/components/workforce/EquipmentTypeFormDialog";
 import {
   LoadingState,
   EmptyState,
@@ -22,6 +24,9 @@ import {
   updateEquipment,
   deleteEquipment,
   getAllEquipmentTypes,
+  createEquipmentType,
+  updateEquipmentType,
+  deleteEquipmentType,
 } from "@/services/workforce";
 
 const statusStyles = {
@@ -32,14 +37,25 @@ const statusStyles = {
 };
 
 export default function EquipmentPage() {
+  const [tab, setTab] = useState(0);
+
+  // Equipment state
   const [equipments, setEquipments] = useState([]);
   const [equipmentTypes, setEquipmentTypes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleting, setDeleting] = useState(false);
+  const [eqFormOpen, setEqFormOpen] = useState(false);
+  const [eqEditing, setEqEditing] = useState(null);
+  const [eqSaving, setEqSaving] = useState(false);
+  const [eqDeleteTarget, setEqDeleteTarget] = useState(null);
+  const [eqDeleting, setEqDeleting] = useState(false);
+
+  // Equipment Type state
+  const [typeFormOpen, setTypeFormOpen] = useState(false);
+  const [typeEditing, setTypeEditing] = useState(null);
+  const [typeSaving, setTypeSaving] = useState(false);
+  const [typeDeleteTarget, setTypeDeleteTarget] = useState(null);
+  const [typeDeleting, setTypeDeleting] = useState(false);
+
   const [toast, setToast] = useState({
     open: false,
     message: "",
@@ -58,7 +74,7 @@ export default function EquipmentPage() {
     } catch {
       setToast({
         open: true,
-        message: "Failed to load equipment",
+        message: "Failed to load data",
         severity: "error",
       });
     } finally {
@@ -70,137 +86,152 @@ export default function EquipmentPage() {
     fetchData();
   }, [fetchData]);
 
-  const handleCreate = () => {
-    setEditing(null);
-    setFormOpen(true);
+  // ─── Equipment handlers ───────────────────────────────────────────
+  const handleEqCreate = () => {
+    setEqEditing(null);
+    setEqFormOpen(true);
   };
-
-  const handleEdit = (eq) => {
-    setEditing(eq);
-    setFormOpen(true);
+  const handleEqEdit = (eq) => {
+    setEqEditing(eq);
+    setEqFormOpen(true);
   };
-
-  const handleFormSubmit = async (data) => {
+  const handleEqSubmit = async (data) => {
     try {
-      setSaving(true);
-      if (editing) {
-        await updateEquipment(editing.id, data);
-        setToast({
-          open: true,
-          message: "Equipment updated",
-          severity: "success",
-        });
+      setEqSaving(true);
+      if (eqEditing) {
+        await updateEquipment(eqEditing.id, data);
+        setToast({ open: true, message: "Equipment updated", severity: "success" });
       } else {
         await createEquipment(data);
-        setToast({
-          open: true,
-          message: "Equipment created",
-          severity: "success",
-        });
+        setToast({ open: true, message: "Equipment created", severity: "success" });
       }
-      setFormOpen(false);
+      setEqFormOpen(false);
       fetchData();
     } catch (err) {
       const msg = err.response?.data?.message || "Operation failed";
       setToast({ open: true, message: msg, severity: "error" });
     } finally {
-      setSaving(false);
+      setEqSaving(false);
     }
   };
-
-  const handleDelete = async () => {
+  const handleEqDelete = async () => {
     try {
-      setDeleting(true);
-      await deleteEquipment(deleteTarget.id);
-      setToast({
-        open: true,
-        message: "Equipment deleted",
-        severity: "success",
-      });
-      setDeleteTarget(null);
+      setEqDeleting(true);
+      await deleteEquipment(eqDeleteTarget.id);
+      setToast({ open: true, message: "Equipment deleted", severity: "success" });
+      setEqDeleteTarget(null);
       fetchData();
     } catch (err) {
       const msg = err.response?.data?.message || "Delete failed";
       setToast({ open: true, message: msg, severity: "error" });
     } finally {
-      setDeleting(false);
+      setEqDeleting(false);
     }
   };
 
-  const columns = [
+  // ─── Equipment Type handlers ──────────────────────────────────────
+  const handleTypeCreate = () => {
+    setTypeEditing(null);
+    setTypeFormOpen(true);
+  };
+  const handleTypeEdit = (type) => {
+    setTypeEditing(type);
+    setTypeFormOpen(true);
+  };
+  const handleTypeSubmit = async (data) => {
+    try {
+      setTypeSaving(true);
+      if (typeEditing) {
+        await updateEquipmentType(typeEditing.id, data);
+        setToast({ open: true, message: "Equipment type updated", severity: "success" });
+      } else {
+        await createEquipmentType(data);
+        setToast({ open: true, message: "Equipment type created", severity: "success" });
+      }
+      setTypeFormOpen(false);
+      fetchData();
+    } catch (err) {
+      const msg = err.response?.data?.message || "Operation failed";
+      setToast({ open: true, message: msg, severity: "error" });
+    } finally {
+      setTypeSaving(false);
+    }
+  };
+  const handleTypeDelete = async () => {
+    try {
+      setTypeDeleting(true);
+      await deleteEquipmentType(typeDeleteTarget.id);
+      setToast({ open: true, message: "Equipment type deleted", severity: "success" });
+      setTypeDeleteTarget(null);
+      fetchData();
+    } catch (err) {
+      const msg = err.response?.data?.message || "Delete failed";
+      setToast({ open: true, message: msg, severity: "error" });
+    } finally {
+      setTypeDeleting(false);
+    }
+  };
+
+  // ─── Column definitions ───────────────────────────────────────────
+  const actionButtons = (onEdit, onDelete) => (row) => (
+    <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 0.5 }}>
+      <Tooltip title="Edit">
+        <IconButton
+          size="small"
+          onClick={(e) => { e.stopPropagation(); onEdit(row); }}
+          sx={{ color: "#6366f1" }}
+        >
+          <EditIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Delete">
+        <IconButton
+          size="small"
+          onClick={(e) => { e.stopPropagation(); onDelete(row); }}
+          sx={{ color: "#ef4444" }}
+        >
+          <DeleteIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>
+    </Box>
+  );
+
+  const eqColumns = [
     { id: "id", label: "ID", sortable: true },
     { id: "name", label: "Name", sortable: true },
     {
-      id: "status",
-      label: "Status",
-      sortable: true,
+      id: "status", label: "Status", sortable: true,
       render: (row) => {
-        const style = statusStyles[row.status] || {
-          bgcolor: "#f1f5f9",
-          color: "#475569",
-        };
-        return (
-          <Chip
-            label={row.status.replace(/_/g, " ")}
-            size="small"
-            sx={{ fontWeight: 600, ...style }}
-          />
-        );
+        const style = statusStyles[row.status] || { bgcolor: "#f1f5f9", color: "#475569" };
+        return <Chip label={row.status.replace(/_/g, " ")} size="small" sx={{ fontWeight: 600, ...style }} />;
       },
     },
     { id: "equipmentTypeName", label: "Type", sortable: true },
     {
-      id: "description",
-      label: "Description",
-      sortable: false,
+      id: "description", label: "Description", sortable: false,
       render: (row) => (
-        <Box
-          sx={{
-            maxWidth: 200,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-            color: "#64748b",
-          }}
-        >
+        <Box sx={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#64748b" }}>
           {row.description || "—"}
         </Box>
       ),
     },
+    { id: "actions", label: "Actions", sortable: false, align: "right", render: actionButtons(handleEqEdit, setEqDeleteTarget) },
+  ];
+
+  const typeColumns = [
+    { id: "id", label: "ID", sortable: true },
+    { id: "name", label: "Name", sortable: true },
+    { id: "manufacturer", label: "Manufacturer", sortable: true },
+    { id: "model", label: "Model", sortable: true },
     {
-      id: "actions",
-      label: "Actions",
-      sortable: false,
-      align: "right",
+      id: "description", label: "Description", sortable: false,
       render: (row) => (
-        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 0.5 }}>
-          <Tooltip title="Edit">
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEdit(row);
-              }}
-              sx={{ color: "#6366f1" }}
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Delete">
-            <IconButton
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                setDeleteTarget(row);
-              }}
-              sx={{ color: "#ef4444" }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+        <Box sx={{ maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#64748b" }}>
+          {row.description || "—"}
         </Box>
       ),
     },
+    { id: "actions", label: "Actions", sortable: false, align: "right", render: actionButtons(handleTypeEdit, setTypeDeleteTarget) },
   ];
 
   if (loading) return <LoadingState message="Loading equipment..." />;
@@ -209,48 +240,92 @@ export default function EquipmentPage() {
     <Box>
       <PageHeader
         title="Equipment"
-        subtitle="Track all warehouse equipment, their status, and assigned types."
+        subtitle="Track all warehouse equipment and manage equipment categories."
         icon={<BuildIcon sx={{ fontSize: 32 }} />}
         backHref="/workforce_service"
-        count={equipments.length}
+        count={tab === 0 ? equipments.length : equipmentTypes.length}
         action={
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={handleCreate}
+            onClick={tab === 0 ? handleEqCreate : handleTypeCreate}
             sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
           >
-            Add Equipment
+            {tab === 0 ? "Add Equipment" : "Add Type"}
           </Button>
         }
       />
 
-      <DataTable
-        columns={columns}
-        rows={equipments}
-        searchKeys={["name", "status", "equipmentTypeName"]}
-        emptyComponent={
-          <EmptyState icon={<BuildIcon />} message="No equipment found." />
-        }
-      />
+      {/* Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
+        <Tabs
+          value={tab}
+          onChange={(_, v) => setTab(v)}
+          sx={{
+            "& .MuiTab-root": { fontWeight: 600, textTransform: "none" },
+            "& .Mui-selected": { color: "#6366f1" },
+            "& .MuiTabs-indicator": { backgroundColor: "#6366f1" },
+          }}
+        >
+          <Tab icon={<BuildIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Equipment" />
+          <Tab icon={<CategoryIcon sx={{ fontSize: 18 }} />} iconPosition="start" label="Equipment Types" />
+        </Tabs>
+      </Box>
 
-      <EquipmentFormDialog
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        onSubmit={handleFormSubmit}
-        equipment={editing}
-        equipmentTypes={equipmentTypes}
-        loading={saving}
-      />
+      {/* Equipment Tab */}
+      {tab === 0 && (
+        <>
+          <DataTable
+            columns={eqColumns}
+            rows={equipments}
+            searchKeys={["name", "status", "equipmentTypeName"]}
+            emptyComponent={<EmptyState icon={<BuildIcon />} message="No equipment found." />}
+          />
+          <EquipmentFormDialog
+            open={eqFormOpen}
+            onClose={() => setEqFormOpen(false)}
+            onSubmit={handleEqSubmit}
+            equipment={eqEditing}
+            equipmentTypes={equipmentTypes}
+            loading={eqSaving}
+          />
+          <ConfirmDialog
+            open={Boolean(eqDeleteTarget)}
+            title="Delete Equipment"
+            message={`Delete "${eqDeleteTarget?.name}"? All assignments and maintenance logs will also be removed.`}
+            onConfirm={handleEqDelete}
+            onCancel={() => setEqDeleteTarget(null)}
+            loading={eqDeleting}
+          />
+        </>
+      )}
 
-      <ConfirmDialog
-        open={Boolean(deleteTarget)}
-        title="Delete Equipment"
-        message={`Delete "${deleteTarget?.name}"? All assignments and maintenance logs will also be removed.`}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteTarget(null)}
-        loading={deleting}
-      />
+      {/* Equipment Types Tab */}
+      {tab === 1 && (
+        <>
+          <DataTable
+            columns={typeColumns}
+            rows={equipmentTypes}
+            searchKeys={["name", "manufacturer", "model"]}
+            emptyComponent={<EmptyState icon={<CategoryIcon />} message="No equipment types found." />}
+          />
+          <EquipmentTypeFormDialog
+            open={typeFormOpen}
+            onClose={() => setTypeFormOpen(false)}
+            onSubmit={handleTypeSubmit}
+            equipmentType={typeEditing}
+            loading={typeSaving}
+          />
+          <ConfirmDialog
+            open={Boolean(typeDeleteTarget)}
+            title="Delete Equipment Type"
+            message={`Delete "${typeDeleteTarget?.name}"? All equipment under this type will also be removed.`}
+            onConfirm={handleTypeDelete}
+            onCancel={() => setTypeDeleteTarget(null)}
+            loading={typeDeleting}
+          />
+        </>
+      )}
 
       <Toast
         open={toast.open}
