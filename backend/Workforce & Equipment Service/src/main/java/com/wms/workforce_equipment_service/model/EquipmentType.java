@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * Entity class representing a type of equipment in the warehouse.
+ */
 @Entity
 @Table(name = "equipment_type")
 @Data

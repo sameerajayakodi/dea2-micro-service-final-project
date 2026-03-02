@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entity class representing the assignment of equipment to workers.
+ */
 @Entity
 @Table(name = "equipment_assignment")
 @Data

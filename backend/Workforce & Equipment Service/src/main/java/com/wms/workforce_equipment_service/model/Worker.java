@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * Entity class representing a worker in the workforce.
+ */
 @Entity
 @Table(name = "worker")
 @Data

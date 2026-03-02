@@ -10,7 +10,9 @@ spring:
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:acpt}
     driver-class-name: com.mysql.cj.jdbc.Driver
-
+#  export DB_USERNAME="admin"
+#  export DB_PASSWORD="Xiaomi123"
+#  export DB_URL="jdbc:mysql://wms-db.cnuco0c4i68g.us-east-2.rds.amazonaws.com:3306/order_service_db?useSSL=false&allowPublicKeyRetrieval=true"
   jpa:
     hibernate:
       ddl-auto: update
@@ -22,7 +24,7 @@ spring:
     open-in-view: false
 
 inventory:
-  base-url: ${INVENTORY_SERVICE_URL:http://localhost:8080}
+  base-url: ${INVENTORY_SERVICE_URL:http://13.53.95.161:8222/inventory-service}
 
 springdoc:
   swagger-ui:
@@ -35,3 +37,10 @@ logging:
   config: classpath:logback-spring.xml
   file:
     path: logs
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_URI:http://13.53.95.161:8761/eureka/}
+  instance:
+    prefer-ip-address: true

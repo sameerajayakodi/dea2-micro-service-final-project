@@ -6,6 +6,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/**
+ * Repository interface for managing MaintenanceLog entities.
+ */
 @Repository
 public interface MaintenanceLogRepository extends JpaRepository<MaintenanceLog, Long> {
     List<MaintenanceLog> findByEquipmentId(Long equipmentId);

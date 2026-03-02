@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO for creating or updating an equipment item.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

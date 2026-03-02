@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO for representing a worker response.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

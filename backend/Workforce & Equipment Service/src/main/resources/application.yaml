@@ -1,6 +1,6 @@
 spring:
   application:
-    name: workforce-equipment-service
+    name: WORKFORCE-EQUIPMENT-SERVICE
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -16,3 +16,8 @@ spring:
 
 server:
   port: 8080
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://13.53.95.161:8761/eureka/

@@ -1,1 +1,3 @@
-# dea2-micro-service-final-project
+# Dispatch & Transportation Service
+
+Microservice for managing dispatch and transportation operations in the WMS.

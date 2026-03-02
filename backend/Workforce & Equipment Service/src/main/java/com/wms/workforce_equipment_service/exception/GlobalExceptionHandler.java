@@ -11,6 +11,9 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Global exception handler for the application.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
