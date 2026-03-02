@@ -1,0 +1,217 @@
+databaseChangeLog:
+  # ──────────────────────────────────────────────
+  # Table: equipment_type (no FK dependencies)
+  # ──────────────────────────────────────────────
+  - changeSet:
+      id: 1-create-equipment-type
+      author: workforce-service
+      changes:
+        - createTable:
+            tableName: equipment_type
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: description
+                  type: VARCHAR(500)
+              - column:
+                  name: manufacturer
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: model
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+
+  # ──────────────────────────────────────────────
+  # Table: worker (no FK dependencies)
+  # ──────────────────────────────────────────────
+  - changeSet:
+      id: 2-create-worker
+      author: workforce-service
+      changes:
+        - createTable:
+            tableName: worker
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: shift
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+
+  # ──────────────────────────────────────────────
+  # Table: equipment (FK → equipment_type)
+  # ──────────────────────────────────────────────
+  - changeSet:
+      id: 3-create-equipment
+      author: workforce-service
+      changes:
+        - createTable:
+            tableName: equipment
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(500)
+              - column:
+                  name: equipment_type_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: equipment
+            baseColumnNames: equipment_type_id
+            referencedTableName: equipment_type
+            referencedColumnNames: id
+            constraintName: fk_equipment_equipment_type
+
+  # ──────────────────────────────────────────────
+  # Table: equipment_assignment (FK → equipment, worker)
+  # ──────────────────────────────────────────────
+  - changeSet:
+      id: 4-create-equipment-assignment
+      author: workforce-service
+      changes:
+        - createTable:
+            tableName: equipment_assignment
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: equipment_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: worker_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: assigned_date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: returned_date
+                  type: TIMESTAMP
+              - column:
+                  name: status
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: equipment_assignment
+            baseColumnNames: equipment_id
+            referencedTableName: equipment
+            referencedColumnNames: id
+            constraintName: fk_assignment_equipment
+        - addForeignKeyConstraint:
+            baseTableName: equipment_assignment
+            baseColumnNames: worker_id
+            referencedTableName: worker
+            referencedColumnNames: id
+            constraintName: fk_assignment_worker
+
+  # ──────────────────────────────────────────────
+  # Table: maintenance_log (FK → equipment)
+  # ──────────────────────────────────────────────
+  - changeSet:
+      id: 5-create-maintenance-log
+      author: workforce-service
+      changes:
+        - createTable:
+            tableName: maintenance_log
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: equipment_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: maintenance_date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: performed_by
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: notes
+                  type: VARCHAR(1000)
+        - addForeignKeyConstraint:
+            baseTableName: maintenance_log
+            baseColumnNames: equipment_id
+            referencedTableName: equipment
+            referencedColumnNames: id
+            constraintName: fk_maintenance_log_equipment
