@@ -20,6 +20,9 @@ services:
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       SERVER_PORT: ${SERVER_PORT}
+      # Ensure Eureka client config is available inside the container
+      EUREKA_URL: ${EUREKA_URL}
+      INSTANCE_IP: ${INSTANCE_IP}
     ports:
       - "${SERVER_PORT}:${SERVER_PORT}"
     depends_on:
