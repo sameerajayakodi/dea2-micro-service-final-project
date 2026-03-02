@@ -1,6 +1,6 @@
 import api from "@/lib/axios";
 
-const BASE = "/api/workers";
+const BASE = "/api/v1/workforce-equipment/workers";
 
 export const getAllWorkers = () => api.get(BASE);
 
