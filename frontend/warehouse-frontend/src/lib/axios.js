@@ -1,10 +1,12 @@
-import axios from 'axios';
+import axios from "axios";
 
-// Create an Axios instance pointing to the API Gateway
+// Requests go to the same origin (Next.js dev server) and get
+// proxied to the API Gateway via the rewrite rule in next.config.mjs.
+// This avoids CORS issues entirely.
 const apiGateway = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://13.53.95.161:8222',
+  baseURL: "", // same-origin — Next.js rewrites /api/* to the gateway
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -18,7 +20,7 @@ apiGateway.interceptors.request.use(
     // }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 export default apiGateway;
