@@ -230,4 +230,63 @@ public class OrderController {
         OrderResponse response = orderService.updateOrderStatus(id, request);
         return ResponseEntity.ok(response);
     }
+    
+    @PutMapping("/{id}/worker")
+    @Operation(
+            summary = "Update worker ID",
+            description = "Assigns or updates the worker ID for a specific order."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Worker ID updated",
+                    content = @Content(schema = @Schema(implementation = OrderResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request or worker ID is empty",
+                    content = @Content(schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "404", description = "Order not found",
+                    content = @Content(schema = @Schema(implementation = ApiError.class)))
+    })
+    public ResponseEntity<OrderResponse> updateWorkerId(
+            @Parameter(description = "UUID of the order", required = true)
+            @PathVariable UUID id,
+            @Valid @RequestBody com.wms.orderservice.dto.request.UpdateWorkerRequest request) {
+        OrderResponse response = orderService.updateWorkerId(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}")
+    @Operation(
+            summary = "Modify order",
+            description = "Modifies an existing order. Only allowed if the order is in CREATED status."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Order updated",
+                    content = @Content(schema = @Schema(implementation = OrderResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request or order not in CREATED status",
+                    content = @Content(schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "404", description = "Order not found",
+                    content = @Content(schema = @Schema(implementation = ApiError.class)))
+    })
+    public ResponseEntity<OrderResponse> updateOrder(
+            @Parameter(description = "UUID of the order to modify", required = true)
+            @PathVariable UUID id,
+            @Valid @RequestBody com.wms.orderservice.dto.request.UpdateOrderRequest request) {
+        OrderResponse response = orderService.updateOrder(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/history")
+    @Operation(
+            summary = "Get order status history",
+            description = "Retrieves the history of status changes for a specific order."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Order history returned",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = com.wms.orderservice.dto.response.OrderStatusHistoryResponse.class)))),
+            @ApiResponse(responseCode = "404", description = "Order not found",
+                    content = @Content(schema = @Schema(implementation = ApiError.class)))
+    })
+    public ResponseEntity<java.util.List<com.wms.orderservice.dto.response.OrderStatusHistoryResponse>> getOrderStatusHistory(
+            @Parameter(description = "UUID of the order", required = true)
+            @PathVariable UUID id) {
+        return ResponseEntity.ok(orderService.getOrderStatusHistory(id));
+    }
 }

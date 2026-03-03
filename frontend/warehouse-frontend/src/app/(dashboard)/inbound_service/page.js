@@ -1,111 +1,73 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
 import MoveToInboxIcon from "@mui/icons-material/MoveToInbox";
+import AddIcon from "@mui/icons-material/Add";
 import { 
-  Box, Paper, Typography, Table, TableBody, 
-  TableCell, TableContainer, TableHead, TableRow, 
-  Chip, Button, CircularProgress 
+  Box, Typography, Button, Paper, Tabs, Tab, 
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow 
 } from "@mui/material";
-// Assuming you have an axios instance in your lib folder
-import api from "@/lib/axios"; 
+import { getInboundShipments, getAllReceipts, getAllReceiptItems } from "@/services/inbound_service/inboundApi";
+import ReceiveShipmentModal from "@/components/services/inbound_service/ReceiveShipmentModal";
 
 export default function InboundServicePage() {
-  const [inboundData, setInboundData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [tabValue, setTabValue] = useState(0);
+  const [data, setData] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    // Fetch data from your Spring Boot Inbound Microservice
-    const fetchInboundShipments = async () => {
-      try {
-        const response = await api.get("/inbound/shipments");
-        setInboundData(response.data);
-      } catch (error) {
-        console.error("Error fetching inbound data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchData = async () => {
+    try {
+      let res;
+      if (tabValue === 0) res = await getInboundShipments(); // GET /shipments
+      else if (tabValue === 1) res = await getAllReceipts();   // GET /receipts
+      else res = await getAllReceiptItems();                   // GET /receipt-items
+      setData(res.data || []);
+    } catch (err) { console.error(err); }
+  };
 
-    fetchInboundShipments();
-  }, []);
+  useEffect(() => { fetchData(); }, [tabValue]);
 
   return (
-    <Box>
-      <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 4 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <MoveToInboxIcon sx={{ fontSize: 32, color: "#6366f1" }} />
-          <Typography variant="h4" sx={{ fontWeight: 700, color: "#1e293b" }}>
-            Inbound Service
-          </Typography>
+          <Typography variant="h4" fontWeight={700}>Inbound Service</Typography>
         </Box>
-        <Typography variant="body1" sx={{ color: "#64748b", maxWidth: 600 }}>
-          Manage incoming shipments, receive goods, and track inbound deliveries
-          into the warehouse.
-        </Typography>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsModalOpen(true)} sx={{ bgcolor: "#6366f1" }}>
+          New Inbound
+        </Button>
       </Box>
 
-      <Paper
-        elevation={0}
-        sx={{
-          p: 0, // Removed padding to let the table reach the edges
-          borderRadius: 3,
-          border: "1px solid",
-          borderColor: "divider",
-          overflow: "hidden"
-        }}
-      >
-        {loading ? (
-          <Box sx={{ p: 4, display: 'flex', justifyContent: 'center' }}>
-            <CircularProgress size={24} sx={{ color: "#6366f1" }} />
-          </Box>
-        ) : inboundData.length > 0 ? (
-          <TableContainer>
-            <Table>
-              <TableHead sx={{ bgcolor: "#f8fafc" }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Shipment ID</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Supplier</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Expected Date</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }} align="right">Actions</TableCell>
+      <Tabs value={tabValue} onChange={(e, val) => setTabValue(val)} sx={{ mb: 3 }}>
+        <Tab label="Shipments" />
+        <Tab label="Receipts (GRNs)" />
+        <Tab label="Items" />
+      </Tabs>
+
+      <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid #e2e8f0", overflow: "hidden" }}>
+        <TableContainer>
+          <Table>
+            <TableHead sx={{ bgcolor: "#f8fafc" }}>
+              <TableRow>
+                {tabValue === 0 && <><TableCell>Supplier</TableCell><TableCell>Product</TableCell><TableCell>Status</TableCell></>}
+                {tabValue === 1 && <><TableCell>GRN Number</TableCell><TableCell>Date</TableCell><TableCell>Status</TableCell></>}
+                {tabValue === 2 && <><TableCell>Item ID</TableCell><TableCell>Qty</TableCell><TableCell>Quality</TableCell></>}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {data.map((row) => (
+                <TableRow key={row.id} hover>
+                  {tabValue === 0 && <><TableCell>{row.supplierName}</TableCell><TableCell>{row.productName}</TableCell><TableCell>{row.status}</TableCell></>}
+                  {tabValue === 1 && <><TableCell sx={{fontWeight: 600, color: "#6366f1"}}>{row.grnNumber}</TableCell><TableCell>{row.receiptDate}</TableCell><TableCell>{row.status}</TableCell></>}
+                  {tabValue === 2 && <><TableCell>#{row.id}</TableCell><TableCell>{row.quantityReceived}</TableCell><TableCell>{row.qualityStatus}</TableCell></>}
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {inboundData.map((row) => (
-                  <TableRow key={row.id} hover>
-                    <TableCell>#{row.shipmentNumber}</TableCell>
-                    <TableCell>{row.supplierName}</TableCell>
-                    <TableCell>{row.expectedDate}</TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={row.status} 
-                        size="small"
-                        sx={{ 
-                          bgcolor: row.status === 'PENDING' ? '#fef3c7' : '#dcfce7',
-                          color: row.status === 'PENDING' ? '#92400e' : '#166534',
-                          fontWeight: 500
-                        }} 
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Button size="small" sx={{ color: "#6366f1", textTransform: 'none' }}>
-                        Receive Items
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        ) : (
-          <Box sx={{ p: 4 }}>
-            <Typography variant="body1" sx={{ color: "#94a3b8" }}>
-              No inbound data found.
-            </Typography>
-          </Box>
-        )}
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </Paper>
+
+      <ReceiveShipmentModal open={isModalOpen} onClose={() => setIsModalOpen(false)} onRefresh={fetchData} />
     </Box>
   );
 }
