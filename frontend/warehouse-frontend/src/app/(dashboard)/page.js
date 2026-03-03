@@ -2,7 +2,6 @@
 
 import BadgeIcon from "@mui/icons-material/Badge";
 import BusinessIcon from "@mui/icons-material/Business";
-import CategoryIcon from "@mui/icons-material/Category";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import MoveToInboxIcon from "@mui/icons-material/MoveToInbox";
@@ -10,7 +9,6 @@ import PeopleIcon from "@mui/icons-material/People";
 import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import WarehouseIcon from "@mui/icons-material/Warehouse";
 import {
   Avatar,
   Box,
@@ -53,16 +51,6 @@ const services = [
     gradient: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)",
   },
   {
-    label: "Products",
-    icon: <CategoryIcon />,
-    gradient: "linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)",
-  },
-  {
-    label: "Storage",
-    icon: <WarehouseIcon />,
-    gradient: "linear-gradient(135deg, #667eea 0%, #6dd5ed 100%)",
-  },
-  {
     label: "Suppliers",
     icon: <BusinessIcon />,
     gradient: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)",
@@ -95,8 +83,8 @@ export default function DashboardPage() {
       {/* Quick stats */}
       <Grid container spacing={3} sx={{ mb: 5 }}>
         {[
-          { label: "Total Services", value: "10", color: "#6366f1" },
-          { label: "Active", value: "10", color: "#22c55e" },
+          { label: "Total Services", value: String(services.length), color: "#6366f1" },
+          { label: "Active", value: String(services.length), color: "#22c55e" },
           { label: "Uptime", value: "99.9%", color: "#f59e0b" },
         ].map((stat) => (
           <Grid size={{ xs: 12, sm: 4 }} key={stat.label}>

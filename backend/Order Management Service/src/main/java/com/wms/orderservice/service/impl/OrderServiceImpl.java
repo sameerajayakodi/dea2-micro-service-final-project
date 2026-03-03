@@ -4,11 +4,14 @@ import com.wms.orderservice.dto.request.ApproveOrderRequest;
 import com.wms.orderservice.dto.request.ApprovedItemRequest;
 import com.wms.orderservice.dto.request.CreateOrderRequest;
 import com.wms.orderservice.dto.request.UpdateOrderStatusRequest;
+import com.wms.orderservice.dto.request.UpdateOrderRequest;
 import com.wms.orderservice.dto.response.AvailabilityResponse;
 import com.wms.orderservice.dto.response.OrderResponse;
+import com.wms.orderservice.dto.response.OrderStatusHistoryResponse;
 import com.wms.orderservice.entity.Order;
 import com.wms.orderservice.entity.OrderItem;
 import com.wms.orderservice.entity.OrderStatus;
+import com.wms.orderservice.entity.OrderStatusHistory;
 import com.wms.orderservice.exception.BusinessException;
 import com.wms.orderservice.exception.NotFoundException;
 import com.wms.orderservice.mapper.OrderMapper;
@@ -24,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -61,7 +65,7 @@ public class OrderServiceImpl implements OrderService {
 
         Order order = orderMapper.toEntity(request);
         order.setOrderNumber(orderNumberGenerator.generateOrderNumber());
-        order.setStatus(OrderStatus.CREATED);
+        changeOrderStatus(order, OrderStatus.CREATED, "Order created");
 
         calculateTotalAmount(order);
 
@@ -106,11 +110,11 @@ public class OrderServiceImpl implements OrderService {
         AvailabilityResponse availability = inventoryClient.checkAvailability(id);
 
         if (!availability.canFulfill() && !order.isPartialAllowed()) {
-            order.setStatus(OrderStatus.REJECTED);
+            changeOrderStatus(order, OrderStatus.REJECTED, "Inventory cannot fulfill requested items and partial not allowed");
             orderRepository.save(order);
             log.info("Order {} REJECTED — cannot fulfill and partial not allowed", order.getOrderNumber());
         } else {
-            order.setStatus(OrderStatus.VALIDATED);
+            changeOrderStatus(order, OrderStatus.VALIDATED, "Inventory check passed");
             orderRepository.save(order);
             log.info("Order {} VALIDATED", order.getOrderNumber());
         }
@@ -155,7 +159,7 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("Cannot cancel order that is already " + order.getStatus());
         }
 
-        order.setStatus(OrderStatus.CANCELLED);
+        changeOrderStatus(order, OrderStatus.CANCELLED, "Order cancelled by user");
         Order saved = orderRepository.save(order);
         log.info("Order {} CANCELLED", order.getOrderNumber());
 
@@ -170,14 +174,83 @@ public class OrderServiceImpl implements OrderService {
 
         validateTransition(order.getStatus(), newStatus);
 
-        order.setStatus(newStatus);
+        changeOrderStatus(order, newStatus, "Manual status update");
         Order saved = orderRepository.save(order);
         log.info("Order {} status updated: {} -> {}", order.getOrderNumber(), order.getStatus(), newStatus);
 
         return orderMapper.toResponse(saved);
     }
 
+    @Override
+    public OrderResponse updateWorkerId(UUID id, com.wms.orderservice.dto.request.UpdateWorkerRequest request) {
+        Order order = findOrderOrThrow(id);
+        
+        order.setWorkerId(request.workerId());
+        Order saved = orderRepository.save(order);
+        log.info("Order {} worker ID updated to: {}", order.getOrderNumber(), request.workerId());
+        
+        return orderMapper.toResponse(saved);
+    }
+
+    @Override
+    public OrderResponse updateOrder(UUID id, UpdateOrderRequest request) {
+        Order order = findOrderOrThrow(id);
+
+        if (order.getStatus() != OrderStatus.CREATED) {
+            throw new BusinessException("Order can only be modified in CREATED status. Current status: " + order.getStatus());
+        }
+
+        log.info("Updating order: {} ({})", order.getOrderNumber(), id);
+
+        order.setPartialAllowed(request.partialAllowed());
+        
+        // Clear existing items and add new ones
+        order.getItems().clear();
+        
+        request.items().forEach(reqItem -> {
+            OrderItem item = OrderItem.builder()
+                    .itemId(reqItem.itemId())
+                    .requestedQty(reqItem.quantity())
+                    .unitPrice(reqItem.unitPrice())
+                    .build();
+            order.addItem(item);
+        });
+
+        calculateTotalAmount(order);
+        Order saved = orderRepository.save(order);
+        log.info("Order {} updated", saved.getOrderNumber());
+
+        return orderMapper.toResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderStatusHistoryResponse> getOrderStatusHistory(UUID id) {
+        Order order = findOrderOrThrow(id);
+        
+        return order.getStatusHistory().stream()
+                .map(history -> OrderStatusHistoryResponse.builder()
+                        .id(history.getId())
+                        .previousStatus(history.getPreviousStatus())
+                        .newStatus(history.getNewStatus())
+                        .reason(history.getReason())
+                        .changedAt(history.getChangedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     // --- Helper methods ---
+
+    private void changeOrderStatus(Order order, OrderStatus newStatus, String reason) {
+        if (order.getStatus() == newStatus) return;
+        OrderStatusHistory history = OrderStatusHistory.builder()
+                .previousStatus(order.getStatus())
+                .newStatus(newStatus)
+                .reason(reason)
+                .build();
+        order.addStatusHistory(history);
+        order.setStatus(newStatus);
+    }
 
     private Order findOrderOrThrow(UUID id) {
         return orderRepository.findById(id)
@@ -207,7 +280,7 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("Cannot fully approve — insufficient stock. Use AUTO or PARTIAL approval.");
         }
         order.getItems().forEach(item -> item.setApprovedQty(item.getRequestedQty()));
-        order.setStatus(OrderStatus.APPROVED);
+        changeOrderStatus(order, OrderStatus.APPROVED, "Order fully approved based on request");
         log.info("Order {} FULLY APPROVED", order.getOrderNumber());
     }
 
@@ -215,7 +288,7 @@ public class OrderServiceImpl implements OrderService {
     private void handleAutoApproval(Order order, AvailabilityResponse availability) {
         if (availability.canFulfill()) {
             order.getItems().forEach(item -> item.setApprovedQty(item.getRequestedQty()));
-            order.setStatus(OrderStatus.APPROVED);
+            changeOrderStatus(order, OrderStatus.APPROVED, "Auto fully approved (sufficient stock)");
             log.info("Order {} AUTO → FULLY APPROVED (sufficient stock)", order.getOrderNumber());
         } else if (order.isPartialAllowed()) {
             // Partial fulfillment — use suggested quantities from the inventory check
@@ -224,7 +297,7 @@ public class OrderServiceImpl implements OrderService {
                 int suggested = suggestedMap.getOrDefault(item.getItemId(), 0);
                 item.setApprovedQty(Math.min(suggested, item.getRequestedQty()));
             });
-            order.setStatus(OrderStatus.PARTIALLY_APPROVED);
+            changeOrderStatus(order, OrderStatus.PARTIALLY_APPROVED, "Auto partially approved based on suggested quantities");
             log.info("Order {} AUTO → PARTIALLY APPROVED", order.getOrderNumber());
         } else {
             throw new BusinessException("Cannot auto-approve — insufficient stock and partial not allowed.");
@@ -264,7 +337,7 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-        order.setStatus(allFull ? OrderStatus.APPROVED : OrderStatus.PARTIALLY_APPROVED);
+        changeOrderStatus(order, allFull ? OrderStatus.APPROVED : OrderStatus.PARTIALLY_APPROVED, "Manual approval processed");
         log.info("Order {} PARTIAL → {}", order.getOrderNumber(), order.getStatus());
     }
 

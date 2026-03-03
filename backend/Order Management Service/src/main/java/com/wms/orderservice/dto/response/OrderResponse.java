@@ -18,5 +18,6 @@ public record OrderResponse(
         BigDecimal totalAmount,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
+        String workerId,
         List<OrderItemResponse> items
 ) {}

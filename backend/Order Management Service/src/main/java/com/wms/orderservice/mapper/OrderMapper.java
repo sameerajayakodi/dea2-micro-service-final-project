@@ -51,6 +51,7 @@ public class OrderMapper {
                 .totalAmount(order.getTotalAmount())
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
+                .workerId(order.getWorkerId())
                 .items(toOrderItemResponses(order.getItems()))
                 .build();
     }
