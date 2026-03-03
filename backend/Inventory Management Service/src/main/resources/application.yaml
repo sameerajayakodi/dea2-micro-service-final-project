@@ -1,6 +1,4 @@
 spring:
-  config:
-    import: optional:file:.env[.properties]
   application:
     name: inventory-management-service
   datasource:
@@ -10,11 +8,28 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: ${DB_DDL_AUTO:update}
-    show-sql: ${DB_SHOW_SQL:true}
+      ddl-auto: update
+    show-sql: true
     properties:
       hibernate:
         format_sql: true
+
+server:
+  port: ${SERVER_PORT:8081}
+  address: 0.0.0.0
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_URL:http://131.163.97.60:8761/eureka/}
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+    ip-address: ${INSTANCE_IP:35.88.199.189}
+    instance-id: ${spring.application.name}:${random.value}
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 20
 
 springdoc:
   api-docs:
@@ -22,24 +37,6 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     operationsSorter: method
-
-server:
-  port: ${SERVER_PORT:8081}
-  address: 0.0.0.0
-
-# ── Eureka Client Configuration ──────────────────────────────────────────────
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://131.163.97.60:8761/eureka/
-    fetch-registry: true
-    register-with-eureka: true
-  instance:
-    prefer-ip-address: true
-    ip-address: 35.88.199.189  # set to the *current* public IP of the Inventory EC2
-    instance-id: ${spring.application.name}:${random.value}
-    lease-renewal-interval-in-seconds: 10
-    lease-expiration-duration-in-seconds: 20
 
 management:
   endpoints:
