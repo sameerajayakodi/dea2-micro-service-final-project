@@ -19,28 +19,21 @@ spring:
 
 server:
   port: 8080
-  address: 0.0.0.0  # Allows the app to listen on all network interfaces
+  address: 0.0.0.0 
 
 eureka:
   client:
     serviceUrl:
-      # This points to your Eureka Server on the other Azure VM
       defaultZone: http://131.163.97.60:8761/eureka/
     fetch-registry: true
     register-with-eureka: true
   instance:
-    # Forces Eureka to use the Public IP instead of the internal 172.x.x.x address
     prefer-ip-address: true
-    ip-address: 4.235.123.21
-    
-    # Creates a unique ID so Eureka doesn't get confused if you restart the service
+    ip-address: 4.235.123.21 #Public IP
     instance-id: ${spring.application.name}:${random.value}
-    
-    # Optional: Helps Gateway detect if the service goes down faster
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 20
 
-# ── Observability ──────────────────────────────────────────────
 management:
   endpoints:
     web:
@@ -54,7 +47,7 @@ management:
       application: ${spring.application.name}
   tracing:
     sampling:
-      probability: 1.0  # 100% sampling — lower in production
+      probability: 1.0
   zipkin:
     tracing:
       endpoint: ${ZIPKIN_URL:http://localhost:9411}/api/v2/spans
