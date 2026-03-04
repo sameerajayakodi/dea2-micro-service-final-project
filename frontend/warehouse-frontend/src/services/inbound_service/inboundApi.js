@@ -16,8 +16,12 @@ export const getShipmentById = (id) => api.get(`/api/v1/inbound/${id}`);
 export const receiveGoods = (data) => api.post("/api/v1/inbound/receive", data);
 
 // PATCH: Update the status of a shipment
-export const updateShipmentStatus = (id, status) => 
+export const updateShipmentStatus = (id, status) =>
     api.patch(`/api/v1/inbound/${id}/status`, null, { params: { status } });
 
 // DELETE: Remove a shipment record
 export const deleteShipment = (id) => api.delete(`/api/v1/inbound/${id}`);
+
+// NEW: Fetch data for searchable dropdowns
+export const getAvailableSuppliers = () => api.get("/api/v1/suppliers");
+export const getAvailableProducts = () => api.get("/api/v1/products");
