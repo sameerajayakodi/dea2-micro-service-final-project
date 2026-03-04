@@ -56,6 +56,6 @@ public class OpenApiConfig {
                 .tags(List.of(
                         new Tag()
                                 .name("Orders")
-                                .description("Order management endpoints — create, retrieve, validate, approve, cancel, and update status")));
+                                .description("Order management endpoints — create, modify, retrieve, validate, approve, cancel, track history, and update status")));
     }
 }

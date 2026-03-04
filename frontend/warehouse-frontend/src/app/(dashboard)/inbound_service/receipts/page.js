@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Paper, Table, TableBody, TableCell, TableHead, TableRow, Typography, Box } from "@mui/material";
+import { Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, Box } from "@mui/material";
 import { getAllReceipts } from "@/services/inbound_service/inboundApi";
 
 export default function ReceiptsPage() {
