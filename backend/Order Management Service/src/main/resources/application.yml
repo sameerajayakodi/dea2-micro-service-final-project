@@ -24,7 +24,7 @@ spring:
     open-in-view: false
 
 inventory:
-  base-url: ${INVENTORY_SERVICE_URL:http://13.53.95.161:8222/inventory-service}
+  base-url: ${INVENTORY_SERVICE_URL:http://131.163.97.60:8222/inventory-service}
 
 springdoc:
   swagger-ui:

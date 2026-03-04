@@ -8,6 +8,7 @@ com\wms\supplyservice\dto\response\PurchaseOrderListResponse.class
 com\wms\supplyservice\dto\request\ReceiveUpdateItemRequest.class
 com\wms\supplyservice\dto\request\CreatePurchaseOrderRequest.class
 com\wms\supplyservice\entity\PurchaseOrder$PurchaseOrderBuilder.class
+com\wms\supplier\management\service\SupplierManagementServiceApplication.class
 com\wms\supplyservice\dto\response\PurchaseOrderItemResponse.class
 com\wms\supplyservice\dto\request\CreatePurchaseOrderRequest$CreatePurchaseOrderRequestBuilder.class
 com\wms\supplyservice\controller\PurchaseOrderController.class
