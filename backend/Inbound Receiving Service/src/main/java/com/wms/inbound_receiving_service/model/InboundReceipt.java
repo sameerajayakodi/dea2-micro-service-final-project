@@ -28,8 +28,7 @@ public class InboundReceipt {
 
     private String status;
 
-    // Refactored: Store only the ID from the external Supplier Service
-    private Long supplierId;
+    private String supplierId;
 
     private Long shipmentId;
 

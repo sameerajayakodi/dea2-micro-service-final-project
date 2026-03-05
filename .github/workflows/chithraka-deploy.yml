@@ -1,0 +1,49 @@
+name: Deploy Storage Location Service (Docker)
+
+on:
+  push:
+    branches:
+      - deploy-sls
+    paths:
+      - "backend/Storage Location Service/**"
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: |
+          set -euo pipefail
+          sudo docker build -t storage-location-service:latest 'backend/Storage Location Service'
+
+      - name: Deploy Docker Container
+        env:
+          DB_URL: ${{ secrets.DB_URL }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          # Create deployment directory for runtime env file
+          mkdir -p /home/azureuser/backend-app
+
+          # Write service DB configuration securely
+          printf '%s\n' "DB_URL=$DB_URL" > /home/azureuser/backend-app/.env
+          printf '%s\n' "DB_USERNAME=$DB_USERNAME" >> /home/azureuser/backend-app/.env
+          printf '%s\n' "DB_PASSWORD=$DB_PASSWORD" >> /home/azureuser/backend-app/.env
+
+          # Secure the env file so only the owner can read it
+          chmod 600 /home/azureuser/backend-app/.env
+
+          # Replace the running container with the newly built image
+          sudo docker rm -f storage-location-service || true
+          sudo docker run -d \
+            --name storage-location-service \
+            --restart unless-stopped \
+            --env-file /home/azureuser/backend-app/.env \
+            -p 8083:8083 \
+            storage-location-service:latest

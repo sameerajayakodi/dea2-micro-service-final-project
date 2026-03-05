@@ -9,19 +9,19 @@ import com.wms.inventory_management_service.dto.response.LowStockAlertResponse;
 import com.wms.inventory_management_service.exception.BadRequestException;
 import com.wms.inventory_management_service.exception.ConflictException;
 import com.wms.inventory_management_service.exception.ResourceNotFoundException;
+import com.wms.inventory_management_service.exception.ServiceException;
 import com.wms.inventory_management_service.model.Inventory;
 import com.wms.inventory_management_service.model.InventoryAdjustment;
-import com.wms.inventory_management_service.model.Product;
 import com.wms.inventory_management_service.model.StorageLocation;
 import com.wms.inventory_management_service.repository.InventoryAdjustmentRepository;
 import com.wms.inventory_management_service.repository.InventoryRepository;
-import com.wms.inventory_management_service.repository.ProductRepository;
 import com.wms.inventory_management_service.repository.StorageLocationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,9 +29,9 @@ import java.util.stream.Collectors;
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
-    private final ProductRepository productRepository;
     private final StorageLocationRepository storageLocationRepository;
     private final InventoryAdjustmentRepository inventoryAdjustmentRepository;
+    private final ProductCatalogClient productCatalogClient;
 
     public List<InventoryResponse> getAllInventories() {
         return inventoryRepository.findAll()
@@ -46,8 +46,8 @@ public class InventoryService {
         return mapToResponse(inventory);
     }
 
-    public List<InventoryResponse> getInventoriesByProductId(Long productId) {
-        return inventoryRepository.findByProductProductId(productId)
+    public List<InventoryResponse> getInventoriesByProductId(UUID productId) {
+        return inventoryRepository.findByProductId(productId)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -67,8 +67,7 @@ public class InventoryService {
                     throw new ConflictException("Inventory with batch number '" + request.getBatchNo() + "' already exists");
                 });
 
-        Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", request.getProductId()));
+        productCatalogClient.getProductById(request.getProductId());
 
         StorageLocation location = storageLocationRepository.findById(request.getLocationId())
                 .orElseThrow(() -> new ResourceNotFoundException("StorageLocation", "locationId", request.getLocationId()));
@@ -80,7 +79,7 @@ public class InventoryService {
         inventory.setQuantityDamaged(request.getQuantityDamaged() != null ? request.getQuantityDamaged() : 0);
         inventory.setExpiryDate(request.getExpiryDate());
         inventory.setLowStockThreshold(request.getLowStockThreshold());
-        inventory.setProduct(product);
+        inventory.setProductId(request.getProductId());
         inventory.setStorageLocation(location);
 
         Inventory saved = inventoryRepository.save(inventory);
@@ -99,8 +98,7 @@ public class InventoryService {
                     }
                 });
 
-        Product product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", request.getProductId()));
+        productCatalogClient.getProductById(request.getProductId());
 
         StorageLocation location = storageLocationRepository.findById(request.getLocationId())
                 .orElseThrow(() -> new ResourceNotFoundException("StorageLocation", "locationId", request.getLocationId()));
@@ -111,7 +109,7 @@ public class InventoryService {
         inventory.setQuantityDamaged(request.getQuantityDamaged() != null ? request.getQuantityDamaged() : inventory.getQuantityDamaged());
         inventory.setExpiryDate(request.getExpiryDate());
         inventory.setLowStockThreshold(request.getLowStockThreshold());
-        inventory.setProduct(product);
+        inventory.setProductId(request.getProductId());
         inventory.setStorageLocation(location);
 
         Inventory saved = inventoryRepository.save(inventory);
@@ -301,6 +299,7 @@ public class InventoryService {
         int totalAvailable = inventory.getQuantityAvailable() - inventory.getQuantityReserved();
         boolean isLowStock = inventory.getLowStockThreshold() != null &&
                 totalAvailable <= inventory.getLowStockThreshold();
+        String productName = resolveProductName(inventory.getProductId());
 
         return new InventoryResponse(
                 inventory.getInventoryId(),
@@ -313,8 +312,8 @@ public class InventoryService {
                 inventory.getStockStatus(),
                 inventory.getLowStockThreshold(),
                 isLowStock,
-                inventory.getProduct().getProductId(),
-                inventory.getProduct().getProductName(),
+                inventory.getProductId(),
+                productName,
                 inventory.getStorageLocation().getLocationId(),
                 inventory.getStorageLocation().getZone(),
                 inventory.getStorageLocation().getRackNo(),
@@ -332,8 +331,19 @@ public class InventoryService {
                 adjustment.getAdjustedBy(),
                 adjustment.getInventory().getInventoryId(),
                 adjustment.getInventory().getBatchNo(),
-                adjustment.getInventory().getProduct().getProductName(),
+                resolveProductName(adjustment.getInventory().getProductId()),
                 adjustment.getCreatedAt()
         );
+    }
+
+    private String resolveProductName(UUID productId) {
+        try {
+            ProductCatalogClient.ProductCatalogProduct product = productCatalogClient.getProductById(productId);
+            return product != null && product.name() != null ? product.name() : "Unknown Product";
+        } catch (ResourceNotFoundException ex) {
+            return "Product Not Found";
+        } catch (Exception ex) {
+            return "Product Service Unavailable";
+        }
     }
 }

@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -34,7 +35,7 @@ public class InventoryRequest {
     private Integer lowStockThreshold;
 
     @NotNull(message = "Product ID is required")
-    private Long productId;
+    private UUID productId;
 
     @NotNull(message = "Location ID is required")
     private Long locationId;

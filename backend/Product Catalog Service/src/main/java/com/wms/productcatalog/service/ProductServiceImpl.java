@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,7 +32,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductDTO updateProduct(Long id, ProductDTO productDTO) {
+    public ProductDTO updateProduct(UUID id, ProductDTO productDTO) {
         Product existingProduct = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
@@ -57,7 +58,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProductDTO getProductById(Long id) {
+    public ProductDTO getProductById(UUID id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         return mapToDTO(product);
@@ -73,14 +74,14 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public void deleteProduct(Long id) {
+    public void deleteProduct(UUID id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         productRepository.delete(product);
     }
 
     @Override
-    public ProductDTO activateProduct(Long id) {
+    public ProductDTO activateProduct(UUID id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         product.setActive(true);
@@ -89,7 +90,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductDTO deactivateProduct(Long id) {
+    public ProductDTO deactivateProduct(UUID id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
         product.setActive(false);

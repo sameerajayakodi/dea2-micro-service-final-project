@@ -28,8 +28,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/cmsdb
       SPRING_DATASOURCE_USERNAME: cmsuser
       SPRING_DATASOURCE_PASSWORD: cmspassword
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://131.163.97.60:8761/eureka/
+      EUREKA_INSTANCE_IP_ADDRESS: 18.138.251.174
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
     ports:
-      - "8081:8080"
+      - "8080:8080"
     restart: unless-stopped
 
 volumes:

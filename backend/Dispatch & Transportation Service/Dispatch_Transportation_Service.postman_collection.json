@@ -1,0 +1,114 @@
+{
+  "info": {
+    "name": "Dispatch & Transportation Service",
+    "description": "API collection for the Dispatch & Transportation Microservice",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Dispatches",
+      "item": [
+        {
+          "name": "Say Hello",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dispatches/hello",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dispatches", "hello"]
+            }
+          }
+        },
+        {
+          "name": "Get All Dispatches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dispatches",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dispatches"]
+            }
+          }
+        },
+        {
+          "name": "Get Dispatch By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dispatches/{{dispatch_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dispatches", "{{dispatch_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Dispatch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"orderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"vehicleId\": \"223e4567-e89b-12d3-a456-426614174001\",\n    \"driverId\": \"323e4567-e89b-12d3-a456-426614174002\",\n    \"status\": \"PENDING\",\n    \"routeDetails\": \"Route 66 to Downtown\",\n    \"deliveryNotes\": \"Deliver between 9 AM and 5 PM\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dispatches",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dispatches"]
+            }
+          }
+        },
+        {
+          "name": "Update Dispatch",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"orderId\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"vehicleId\": \"223e4567-e89b-12d3-a456-426614174001\",\n    \"driverId\": \"323e4567-e89b-12d3-a456-426614174002\",\n    \"status\": \"IN_TRANSIT\",\n    \"routeDetails\": \"Route 66 to Downtown\",\n    \"deliveryNotes\": \"Delay due to traffic\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dispatches/{{dispatch_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dispatches", "{{dispatch_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Dispatch",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dispatches/{{dispatch_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "dispatches", "{{dispatch_id}}"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "dispatch_id",
+      "value": "REPLACE_WITH_ACTUAL_UUID"
+    }
+  ]
+}

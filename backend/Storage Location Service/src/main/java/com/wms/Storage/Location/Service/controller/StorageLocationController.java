@@ -1,5 +1,6 @@
 package com.wms.Storage.Location.Service.controller;
 
+import com.wms.Storage.Location.Service.dto.request.CapacityUpdateRequest;
 import com.wms.Storage.Location.Service.dto.request.StorageLocationRequest;
 import com.wms.Storage.Location.Service.dto.response.StorageLocationResponse;
 import com.wms.Storage.Location.Service.service.StorageLocationService;
@@ -56,12 +57,15 @@ public class StorageLocationController {
         }
 
         @PatchMapping("/{id}/capacity")
-        @Operation(summary = "Updates bin capacity for Inventory Service", description = "Adds current weight and volume. Automatically flips status to FULL if limits are exceeded.")
+        @Operation(summary = "Updates bin capacity for Inventory Service", description = "Adds or removes weight/volume. Pass negative values to reduce capacity (e.g., on goods removal). "
+                        +
+                        "Throws 400 if new value would drop below zero or exceed the maximum limit.")
         public ResponseEntity<StorageLocationResponse> updateCapacity(
                         @PathVariable Long id,
-                        @RequestParam(required = false, defaultValue = "0") Double addedWeight,
-                        @RequestParam(required = false, defaultValue = "0") Double addedVolume) {
-                return ResponseEntity.ok(storageLocationService.updateCapacity(id, addedWeight, addedVolume));
+                        @RequestBody CapacityUpdateRequest request) {
+                return ResponseEntity.ok(
+                                storageLocationService.updateCapacity(id, request.addedWeight(),
+                                                request.addedVolume()));
         }
 
         @GetMapping("/available")

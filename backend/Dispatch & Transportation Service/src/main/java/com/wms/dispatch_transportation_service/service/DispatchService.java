@@ -8,6 +8,7 @@ import com.wms.dispatch_transportation_service.repository.DispatchRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,52 +27,73 @@ public class DispatchService implements IDispatchService {
     }
 
     @Override
-    public DispatchResponse getDispatchById(Long id) {
+    public DispatchResponse getDispatchById(String id) {
         Dispatch dispatch = dispatchRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Dispatch not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Dispatch (Shipment) not found with id: " + id));
         return mapToResponse(dispatch);
     }
 
     @Override
     public DispatchResponse createDispatch(DispatchRequest request) {
         Dispatch dispatch = new Dispatch();
-        dispatch.setVehicleNo(request.getVehicleNo());
-        dispatch.setDeliveryStatus(request.getDeliveryStatus());
         dispatch.setOrderId(request.getOrderId());
-        dispatch.setDate(request.getDate());
+        dispatch.setVehicleId(request.getVehicleId());
+        dispatch.setDriverId(request.getDriverId());
+        
+        if(request.getStatus() != null && !request.getStatus().isEmpty()) {
+            dispatch.setStatus(request.getStatus());
+        } else {
+            dispatch.setStatus("PENDING");
+        }
+        
+        dispatch.setRouteDetails(request.getRouteDetails());
+        dispatch.setDeliveryNotes(request.getDeliveryNotes());
+        dispatch.setCreatedAt(LocalDateTime.now());
+        dispatch.setUpdatedAt(LocalDateTime.now());
 
         Dispatch saved = dispatchRepository.save(dispatch);
         return mapToResponse(saved);
     }
 
     @Override
-    public DispatchResponse updateDispatch(Long id, DispatchRequest request) {
+    public DispatchResponse updateDispatch(String id, DispatchRequest request) {
         Dispatch dispatch = dispatchRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Dispatch not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Dispatch (Shipment) not found with id: " + id));
 
-        dispatch.setVehicleNo(request.getVehicleNo());
-        dispatch.setDeliveryStatus(request.getDeliveryStatus());
         dispatch.setOrderId(request.getOrderId());
-        dispatch.setDate(request.getDate());
+        dispatch.setVehicleId(request.getVehicleId());
+        dispatch.setDriverId(request.getDriverId());
+        
+        if(request.getStatus() != null && !request.getStatus().isEmpty()) {
+            dispatch.setStatus(request.getStatus());
+        }
+        
+        dispatch.setRouteDetails(request.getRouteDetails());
+        dispatch.setDeliveryNotes(request.getDeliveryNotes());
+        dispatch.setUpdatedAt(LocalDateTime.now());
 
         Dispatch updated = dispatchRepository.save(dispatch);
         return mapToResponse(updated);
     }
 
     @Override
-    public void deleteDispatch(Long id) {
+    public void deleteDispatch(String id) {
         Dispatch dispatch = dispatchRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Dispatch not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Dispatch (Shipment) not found with id: " + id));
         dispatchRepository.delete(dispatch);
     }
 
     private DispatchResponse mapToResponse(Dispatch dispatch) {
         return new DispatchResponse(
                 dispatch.getId(),
-                dispatch.getVehicleNo(),
-                dispatch.getDeliveryStatus(),
                 dispatch.getOrderId(),
-                dispatch.getDate()
+                dispatch.getVehicleId(),
+                dispatch.getDriverId(),
+                dispatch.getStatus(),
+                dispatch.getRouteDetails(),
+                dispatch.getDeliveryNotes(),
+                dispatch.getCreatedAt(),
+                dispatch.getUpdatedAt()
         );
     }
 }

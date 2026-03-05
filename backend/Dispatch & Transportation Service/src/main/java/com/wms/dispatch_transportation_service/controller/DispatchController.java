@@ -20,7 +20,7 @@ public class DispatchController {
 
     @GetMapping("/hello")
     public String sayHi() {
-        return "Hi";
+        return "Hi from Dispatch & Transportation Service (MySQL + UUID)";
     }
 
     @GetMapping
@@ -29,7 +29,7 @@ public class DispatchController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DispatchResponse> getDispatchById(@PathVariable Long id) {
+    public ResponseEntity<DispatchResponse> getDispatchById(@PathVariable String id) {
         return ResponseEntity.ok(dispatchService.getDispatchById(id));
     }
 
@@ -40,13 +40,13 @@ public class DispatchController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<DispatchResponse> updateDispatch(@PathVariable Long id,
+    public ResponseEntity<DispatchResponse> updateDispatch(@PathVariable String id,
                                                              @Valid @RequestBody DispatchRequest request) {
         return ResponseEntity.ok(dispatchService.updateDispatch(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteDispatch(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteDispatch(@PathVariable String id) {
         dispatchService.deleteDispatch(id);
         return ResponseEntity.noContent().build();
     }

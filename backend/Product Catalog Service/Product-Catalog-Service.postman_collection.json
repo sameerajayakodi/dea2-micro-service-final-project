@@ -1,25 +1,43 @@
 {
 	"info": {
-		"_postman_id": "product-catalog-service-collection",
-		"name": "Product Catalog Service",
-		"description": "REST API collection for Product Catalog Microservice.\n\nBase URL: http://localhost:8080\n\nEndpoints:\n- POST /api/products - Create a new product\n- PUT /api/products/{id} - Update product\n- GET /api/products - Get all products\n- GET /api/products/{id} - Get product by ID\n- PATCH /api/products/{id}/activate - Activate product\n- PATCH /api/products/{id}/deactivate - Deactivate product\n- DELETE /api/products/{id} - Delete product",
+		"_postman_id": "b8f9e6a0-8a7e-4b2e-a50f-2178b688c2f1",
+		"name": "Product Catalog Service (Fully Automated)",
+		"description": "A fully automated Postman collection that extracts IDs and runs operations sequentially. Best run as a Collection run.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
-	"variable": [
-		{
-			"key": "baseUrl",
-			"value": "http://localhost:8080",
-			"type": "string"
-		},
-		{
-			"key": "productId",
-			"value": "1",
-			"type": "string"
-		}
-	],
 	"item": [
 		{
-			"name": "Create Product",
+			"name": "1. Create Product",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"let randomSku = 'SKU-' + Math.floor(Math.random() * 1000000);",
+							"pm.collectionVariables.set('random_sku', randomSku);"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"let jsonData = pm.response.json();",
+							"pm.test(\"Extract product_id\", function () {",
+							"    pm.expect(jsonData.id).to.exist;",
+							"    pm.collectionVariables.set(\"product_id\", jsonData.id);",
+							"    console.log(\"Saved product_id: \" + jsonData.id);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "POST",
 				"header": [
@@ -30,108 +48,76 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"name\": \"Wireless Bluetooth Headphones\",\n    \"description\": \"Premium noise-cancelling wireless headphones with 30-hour battery life\",\n    \"skuCode\": \"WBH-001\",\n    \"price\": 79.99,\n    \"category\": \"Electronics\",\n    \"imageUrl\": \"https://example.com/images/headphones.jpg\",\n    \"active\": true\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
+					"raw": "{\n    \"name\": \"Automated Product\",\n    \"description\": \"A product created by automated Postman runner\",\n    \"skuCode\": \"{{random_sku}}\",\n    \"price\": 199.99,\n    \"category\": \"Automation\",\n    \"active\": true\n}"
 				},
 				"url": {
-					"raw": "{{baseUrl}}/api/products",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "products"]
-				},
-				"description": "Create a new product in the catalog. Name, skuCode, and price are required fields. SKU code must be unique."
-			},
-			"response": []
+					"raw": "{{base_url}}/api/products",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"products"
+					]
+				}
+			}
 		},
 		{
-			"name": "Create Product - Laptop",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
+			"name": "2. Get Product By ID",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"let jsonData = pm.response.json();",
+							"pm.test(\"ID matches\", function () {",
+							"    pm.expect(jsonData.id).to.eql(pm.collectionVariables.get(\"product_id\"));",
+							"});"
+						],
+						"type": "text/javascript"
 					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"name\": \"Gaming Laptop Pro\",\n    \"description\": \"High-performance gaming laptop with RTX 4070, 16GB RAM, 512GB SSD\",\n    \"skuCode\": \"GLP-002\",\n    \"price\": 1299.99,\n    \"category\": \"Computers\",\n    \"imageUrl\": \"https://example.com/images/gaming-laptop.jpg\",\n    \"active\": true\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{baseUrl}}/api/products",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "products"]
-				},
-				"description": "Create another sample product - Gaming Laptop"
-			},
-			"response": []
-		},
-		{
-			"name": "Create Product - Smartphone",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"name\": \"Smartphone Ultra X\",\n    \"description\": \"Flagship smartphone with 6.7-inch AMOLED display, 128GB storage\",\n    \"skuCode\": \"SPU-003\",\n    \"price\": 899.99,\n    \"category\": \"Mobile Phones\",\n    \"imageUrl\": \"https://example.com/images/smartphone.jpg\",\n    \"active\": true\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{baseUrl}}/api/products",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "products"]
-				},
-				"description": "Create another sample product - Smartphone"
-			},
-			"response": []
-		},
-		{
-			"name": "Get All Products",
+				}
+			],
 			"request": {
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/api/products",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "products"]
-				},
-				"description": "Retrieve all products from the catalog."
-			},
-			"response": []
+					"raw": "{{base_url}}/api/products/{{product_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"products",
+						"{{product_id}}"
+					]
+				}
+			}
 		},
 		{
-			"name": "Get Product by ID",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{baseUrl}}/api/products/{{productId}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "products", "{{productId}}"]
-				},
-				"description": "Retrieve a single product by its ID."
-			},
-			"response": []
-		},
-		{
-			"name": "Update Product",
+			"name": "3. Update Product",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"let jsonData = pm.response.json();",
+							"pm.test(\"Name is updated\", function () {",
+							"    pm.expect(jsonData.name).to.eql(\"Automated Product (Updated)\");",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "PUT",
 				"header": [
@@ -142,133 +128,209 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"name\": \"Wireless Bluetooth Headphones Pro\",\n    \"description\": \"Premium noise-cancelling wireless headphones with 40-hour battery life and ANC 2.0\",\n    \"skuCode\": \"WBH-001\",\n    \"price\": 99.99,\n    \"category\": \"Electronics\",\n    \"imageUrl\": \"https://example.com/images/headphones-pro.jpg\",\n    \"active\": true\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
+					"raw": "{\n    \"name\": \"Automated Product (Updated)\",\n    \"description\": \"This description was updated by Postman\",\n    \"skuCode\": \"{{random_sku}}\",\n    \"price\": 299.99,\n    \"category\": \"Automation\",\n    \"active\": true\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/products/{{product_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"products",
+						"{{product_id}}"
+					]
+				}
+			}
+		},
+		{
+			"name": "4. Get All Products",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"let jsonData = pm.response.json();",
+							"pm.test(\"Returns an array\", function () {",
+							"    pm.expect(jsonData).to.be.an(\"array\");",
+							"    pm.expect(jsonData.length).to.be.above(0);",
+							"});"
+						],
+						"type": "text/javascript"
 					}
-				},
-				"url": {
-					"raw": "{{baseUrl}}/api/products/{{productId}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "products", "{{productId}}"]
-				},
-				"description": "Update an existing product by its ID. All required fields (name, skuCode, price) must be provided."
-			},
-			"response": []
-		},
-		{
-			"name": "Activate Product",
-			"request": {
-				"method": "PATCH",
-				"header": [],
-				"url": {
-					"raw": "{{baseUrl}}/api/products/{{productId}}/activate",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "products", "{{productId}}", "activate"]
-				},
-				"description": "Activate a product by setting its active status to true."
-			},
-			"response": []
-		},
-		{
-			"name": "Deactivate Product",
-			"request": {
-				"method": "PATCH",
-				"header": [],
-				"url": {
-					"raw": "{{baseUrl}}/api/products/{{productId}}/deactivate",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "products", "{{productId}}", "deactivate"]
-				},
-				"description": "Deactivate a product by setting its active status to false."
-			},
-			"response": []
-		},
-		{
-			"name": "Delete Product",
-			"request": {
-				"method": "DELETE",
-				"header": [],
-				"url": {
-					"raw": "{{baseUrl}}/api/products/{{productId}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "products", "{{productId}}"]
-				},
-				"description": "Delete a product by its ID. Returns 204 No Content on success."
-			},
-			"response": []
-		},
-		{
-			"name": "Create Product - Validation Error (Missing Name)",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"description\": \"Test product without name\",\n    \"skuCode\": \"TST-999\",\n    \"price\": 10.00,\n    \"category\": \"Test\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{baseUrl}}/api/products",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "products"]
-				},
-				"description": "Test validation - should return 400 Bad Request because 'name' is missing."
-			},
-			"response": []
-		},
-		{
-			"name": "Create Product - Duplicate SKU Error",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"name\": \"Duplicate SKU Test\",\n    \"description\": \"This should fail because WBH-001 already exists\",\n    \"skuCode\": \"WBH-001\",\n    \"price\": 50.00,\n    \"category\": \"Test\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "{{baseUrl}}/api/products",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "products"]
-				},
-				"description": "Test duplicate SKU handling - should return 409 Conflict because SKU 'WBH-001' already exists."
-			},
-			"response": []
-		},
-		{
-			"name": "Get Product - Not Found",
+				}
+			],
 			"request": {
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/api/products/999",
-					"host": ["{{baseUrl}}"],
-					"path": ["api", "products", "999"]
-				},
-				"description": "Test not found handling - should return 404 Not Found for a non-existent product ID."
-			},
-			"response": []
+					"raw": "{{base_url}}/api/products",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"products"
+					]
+				}
+			}
+		},
+		{
+			"name": "5. Deactivate Product",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"let jsonData = pm.response.json();",
+							"pm.test(\"Product is inactive\", function () {",
+							"    pm.expect(jsonData.active).to.be.false;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/products/{{product_id}}/deactivate",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"products",
+						"{{product_id}}",
+						"deactivate"
+					]
+				}
+			}
+		},
+		{
+			"name": "6. Activate Product",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"let jsonData = pm.response.json();",
+							"pm.test(\"Product is active\", function () {",
+							"    pm.expect(jsonData.active).to.be.true;",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/products/{{product_id}}/activate",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"products",
+						"{{product_id}}",
+						"activate"
+					]
+				}
+			}
+		},
+		{
+			"name": "7. Delete Product",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 204\", function () {",
+							"    pm.response.to.have.status(204);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/products/{{product_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"products",
+						"{{product_id}}"
+					]
+				}
+			}
+		},
+		{
+			"name": "8. Verify Deletion (Get By ID)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 404 Not Found\", function () {",
+							"    pm.response.to.have.status(404);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/products/{{product_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"products",
+						"{{product_id}}"
+					]
+				}
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "product_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "random_sku",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
 		}
 	]
 }

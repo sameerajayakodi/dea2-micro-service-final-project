@@ -18,6 +18,8 @@ import {
   Snackbar,
   Alert,
   Grid,
+  Autocomplete,
+  MenuItem,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import EditIcon from "@mui/icons-material/Edit";
@@ -43,6 +45,8 @@ import {
   approveOrder,
   updateOrderStatus,
   modifyOrder,
+  getProducts,
+  getCustomers,
 } from "@/services/orders/ordersApi";
 
 /* ── Status helpers ─────────────────────────────────────────── */
@@ -66,6 +70,8 @@ export default function OrderDetailsPage() {
 
   const [order, setOrder]     = useState(null);
   const [history, setHistory] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [products, setProducts]   = useState([]);
   const [loading, setLoading] = useState(true);
 
   // ── Modify-modal state ──
@@ -96,23 +102,57 @@ export default function OrderDetailsPage() {
     }
   }, [orderId]);
 
+  const loadExtras = useCallback(async () => {
+    try {
+      const [cRes, pRes] = await Promise.allSettled([getCustomers(), getProducts()]);
+      if (cRes.status === "fulfilled") {
+        const d = cRes.value.data;
+        setCustomers(Array.isArray(d) ? d : Array.isArray(d?.content) ? d.content : []);
+      }
+      if (pRes.status === "fulfilled") {
+        const d = pRes.value.data;
+        setProducts(Array.isArray(d) ? d : Array.isArray(d?.content) ? d.content : []);
+      }
+    } catch (err) {}
+  }, []);
+
   const loadAll = useCallback(async () => {
     setLoading(true);
-    await Promise.all([loadOrder(), loadHistory()]);
+    await Promise.all([loadOrder(), loadHistory(), loadExtras()]);
     setLoading(false);
-  }, [loadOrder, loadHistory]);
+  }, [loadOrder, loadHistory, loadExtras]);
 
   useEffect(() => {
     if (orderId) loadAll();
   }, [orderId, loadAll]);
 
   /* ── Action handlers ─────────────────────────────────────── */
+  const getErrorMessage = (err, fallback) => {
+    const dataMsg = err?.response?.data?.message;
+    if (dataMsg) {
+      try {
+        const jsonMatch = dataMsg.match(/\{.*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.message) {
+            const prefix = dataMsg.split(':')[0];
+            return `${prefix}: ${parsed.message}`;
+          }
+        }
+      } catch (e) {}
+      return dataMsg;
+    }
+    return fallback;
+  };
+
   const handleValidate = async () => {
     try {
       await validateOrder(orderId);
       showToast("success", "Order validated");
       loadAll();
-    } catch { showToast("error", "Validation failed"); }
+    } catch (err) {
+      showToast("error", getErrorMessage(err, "Validation failed"));
+    }
   };
 
   const handleApprove = async () => {
@@ -120,7 +160,9 @@ export default function OrderDetailsPage() {
       await approveOrder(orderId, { approvalType: "AUTO" });
       showToast("success", "Order approved");
       loadAll();
-    } catch { showToast("error", "Approval failed"); }
+    } catch (err) {
+      showToast("error", getErrorMessage(err, "Approval failed"));
+    }
   };
 
   const handleRequestPicking = async () => {
@@ -128,7 +170,9 @@ export default function OrderDetailsPage() {
       await updateOrderStatus(orderId, { status: "PICKING_REQUESTED" });
       showToast("success", "Picking requested");
       loadAll();
-    } catch { showToast("error", "Request picking failed"); }
+    } catch (err) {
+      showToast("error", getErrorMessage(err, "Request picking failed"));
+    }
   };
 
   /* ── Modify modal helpers ────────────────────────────────── */
@@ -157,7 +201,7 @@ export default function OrderDetailsPage() {
       setModifyOpen(false);
       showToast("success", "Order modified");
       loadAll();
-    } catch { showToast("error", "Modify failed"); }
+    } catch (err) { showToast("error", getErrorMessage(err, "Modify failed")); }
     finally { setSaving(false); }
   };
 
@@ -165,6 +209,13 @@ export default function OrderDetailsPage() {
     setEditItems((prev) => {
       const copy = [...prev];
       copy[idx] = { ...copy[idx], [field]: val };
+      
+      if (field === "itemId") {
+        const selectedProd = products.find((p) => String(p.id) === String(val));
+        if (selectedProd && selectedProd.price !== undefined) {
+           copy[idx].unitPrice = selectedProd.price;
+        }
+      }
       return copy;
     });
   };
@@ -190,6 +241,10 @@ export default function OrderDetailsPage() {
   }
 
   const status = (order.status ?? "").toUpperCase();
+
+  const cObj = customers.find(x => String(x.customerId || x.id) === String(order.customerId));
+  const cName = cObj ? (cObj.customerName || cObj.name || cObj.firstName) : null;
+  const customerDisplay = cName ? `${cName} (${order.customerId})` : (order.customerId || "N/A");
 
   /* ═══════════════════════════════════════════════════════════
      RENDER
@@ -234,7 +289,7 @@ export default function OrderDetailsPage() {
             <Grid container spacing={2.5}>
               {[
                 { label: "Order Number", value: order.orderNumber || order.id, mono: true },
-                { label: "Customer ID",  value: order.customerId || "N/A" },
+                { label: "Customer",     value: customerDisplay },
                 { label: "Created At",   value: dayjs(order.createdAt).format("MMM D, YYYY h:mm A") },
                 { label: "Partial",      value: order.partialAllowed ? "Yes" : "No" },
                 { label: "Worker ID",    value: order.workerId || "Unassigned" },
@@ -322,7 +377,11 @@ export default function OrderDetailsPage() {
               >
                 <Box>
                   <Typography variant="body1" sx={{ fontWeight: 600, color: "#1e293b" }}>
-                    {item.itemId}
+                    {(() => {
+                      const p = products.find(x => String(x.id) === String(item.itemId));
+                      const pName = p?.name;
+                      return pName ? `${pName} (${item.itemId})` : item.itemId;
+                    })()}
                   </Typography>
                   <Box sx={{ display: "flex", gap: 3, mt: 0.5 }}>
                     <Typography variant="body2" sx={{ color: "#64748b" }}>
@@ -437,12 +496,31 @@ export default function OrderDetailsPage() {
         <DialogContent sx={{ pt: 3 }}>
           {editItems.map((item, idx) => (
             <Box key={idx} sx={{ display: "flex", gap: 2, mb: 2, mt: idx === 0 ? 1 : 0 }}>
-              <TextField
-                label="Item ID"
-                value={item.itemId}
-                onChange={(e) => changeEditItem(idx, "itemId", e.target.value)}
+              <Autocomplete
+                options={products}
+                getOptionLabel={(p) => p.name ? `${p.name} - ${p.skuCode || ""}` : `Product ${p.id || item.itemId}`}
+                value={products.find(p => String(p.id) === String(item.itemId)) || null}
+                onChange={(_, newValue) => changeEditItem(idx, "itemId", newValue ? newValue.id : "")}
+                isOptionEqualToValue={(option, value) => String(option.id) === String(value.id)}
                 size="small"
-                sx={{ flex: 2 }}
+                sx={{ flex: 2, minWidth: 200 }}
+                ListboxProps={{ style: { maxHeight: 250, overflow: "auto" } }}
+                renderInput={(params) => <TextField {...params} label="Product" />}
+                noOptionsText={products.length === 0 ? "Loading products..." : "No match"}
+                renderOption={(props, option, { selected }) => {
+                  const { key, ...otherProps } = props;
+                  return (
+                    <MenuItem key={key} {...otherProps} sx={{ py: 1, borderBottom: "1px solid #f1f5f9" }}>
+                      <Box sx={{ display: "flex", flexDirection: "column", width: "100%" }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: "#1e293b" }}>{option.name || `Product ${option.id}`}</Typography>
+                        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                          <Typography variant="caption" sx={{ color: "#64748b" }}>SKU: {option.skuCode || "N/A"}</Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 700, color: "#10b981" }}>${Number(option.price || 0).toFixed(2)}</Typography>
+                        </Box>
+                      </Box>
+                    </MenuItem>
+                  );
+                }}
               />
               <TextField
                 label="Qty"

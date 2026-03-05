@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${DB_USERNAME:-wms}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-wms}
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db-data-v2:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
@@ -28,4 +28,4 @@ services:
       - db
 
 volumes:
-  db-data:
+  db-data-v2:

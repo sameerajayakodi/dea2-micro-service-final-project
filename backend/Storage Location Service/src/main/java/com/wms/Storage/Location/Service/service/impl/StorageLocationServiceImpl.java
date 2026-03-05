@@ -23,138 +23,161 @@ import java.util.stream.Collectors;
 @Transactional
 public class StorageLocationServiceImpl implements StorageLocationService {
 
-    private final StorageLocationRepository storageLocationRepository;
+        private final StorageLocationRepository storageLocationRepository;
 
-    @Override
-    public StorageLocationResponse createLocation(StorageLocationRequest request) {
-        log.info("Creating storage location: Zone={}, Rack={}, Bin={}", request.zone(), request.rackNo(),
-                request.binNo());
+        @Override
+        public StorageLocationResponse createLocation(StorageLocationRequest request) {
+                log.info("Creating storage location: Zone={}, Rack={}, Bin={}", request.zone(), request.rackNo(),
+                                request.binNo());
 
-        storageLocationRepository.findByZoneAndRackNoAndBinNo(request.zone(), request.rackNo(), request.binNo())
-                .ifPresent(location -> {
-                    throw new IllegalArgumentException(
-                            String.format("Storage location already exists: Zone=%s, Rack=%s, Bin=%s", request.zone(),
-                                    request.rackNo(), request.binNo()));
-                });
+                storageLocationRepository.findByZoneAndRackNoAndBinNo(request.zone(), request.rackNo(), request.binNo())
+                                .ifPresent(location -> {
+                                        throw new IllegalArgumentException(
+                                                        String.format("Storage location already exists: Zone=%s, Rack=%s, Bin=%s",
+                                                                        request.zone(),
+                                                                        request.rackNo(), request.binNo()));
+                                });
 
-        StorageLocation location = new StorageLocation();
-        location.setZone(request.zone());
-        location.setRackNo(request.rackNo());
-        location.setBinNo(request.binNo());
-        location.setMaxWeight(request.maxWeight());
-        location.setMaxVolume(request.maxVolume());
+                StorageLocation location = new StorageLocation();
+                location.setZone(request.zone());
+                location.setRackNo(request.rackNo());
+                location.setBinNo(request.binNo());
+                location.setMaxWeight(request.maxWeight());
+                location.setMaxVolume(request.maxVolume());
 
-        StorageLocation saved = storageLocationRepository.save(location);
-        return mapToResponse(saved);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public StorageLocationResponse getLocationById(Long id) {
-        StorageLocation location = storageLocationRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Storage location not found with id: " + id));
-        return mapToResponse(location);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<StorageLocationResponse> getAllLocations() {
-        return storageLocationRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public StorageLocationResponse updateLocation(Long id, StorageLocationRequest request) {
-        log.info("Updating storage location with ID: {}", id);
-
-        StorageLocation location = storageLocationRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Storage location not found with id: " + id));
-
-        // Check for duplicate if zone/rack/bin is being changed
-        storageLocationRepository.findByZoneAndRackNoAndBinNo(request.zone(), request.rackNo(), request.binNo())
-                .filter(existing -> !existing.getLocationId().equals(id))
-                .ifPresent(existing -> {
-                    throw new IllegalArgumentException(
-                            String.format("Another storage location already exists: Zone=%s, Rack=%s, Bin=%s",
-                                    request.zone(), request.rackNo(), request.binNo()));
-                });
-
-        location.setZone(request.zone());
-        location.setRackNo(request.rackNo());
-        location.setBinNo(request.binNo());
-        location.setMaxWeight(request.maxWeight());
-        location.setMaxVolume(request.maxVolume());
-
-        location.updateAvailabilityStatus();
-
-        StorageLocation updated = storageLocationRepository.save(location);
-        return mapToResponse(updated);
-    }
-
-    @Override
-    public void deleteLocation(Long id) {
-        StorageLocation location = storageLocationRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Storage location not found with id: " + id));
-        storageLocationRepository.delete(location);
-        log.info("Deleted storage location with ID: {}", id);
-    }
-
-    @Override
-    public StorageLocationResponse updateCapacity(Long id, Double addedWeight, Double addedVolume) {
-        log.info("Updating capacity for location ID {}: AddedWeight={}, AddedVolume={}", id, addedWeight, addedVolume);
-
-        StorageLocation location = storageLocationRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Storage location not found with id: " + id));
-
-        BigDecimal addW = addedWeight != null ? BigDecimal.valueOf(addedWeight) : BigDecimal.ZERO;
-        BigDecimal addV = addedVolume != null ? BigDecimal.valueOf(addedVolume) : BigDecimal.ZERO;
-
-        BigDecimal newWeight = location.getCurrentWeight().add(addW);
-        BigDecimal newVolume = location.getCurrentVolume().add(addV);
-
-        // Fail if exceeds max capacity limits
-        if (location.getMaxWeight() != null && newWeight.compareTo(location.getMaxWeight()) > 0) {
-            throw new CapacityExceededException(
-                    String.format("Weight capacity exceeded for location ID %d. Current: %s, Adding: %s, Max: %s",
-                            id, location.getCurrentWeight(), addW, location.getMaxWeight()));
+                StorageLocation saved = storageLocationRepository.save(location);
+                return mapToResponse(saved);
         }
 
-        if (location.getMaxVolume() != null && newVolume.compareTo(location.getMaxVolume()) > 0) {
-            throw new CapacityExceededException(
-                    String.format("Volume capacity exceeded for location ID %d. Current: %s, Adding: %s, Max: %s",
-                            id, location.getCurrentVolume(), addV, location.getMaxVolume()));
+        @Override
+        @Transactional(readOnly = true)
+        public StorageLocationResponse getLocationById(Long id) {
+                StorageLocation location = storageLocationRepository.findById(id)
+                                .orElseThrow(() -> new NotFoundException("Storage location not found with id: " + id));
+                return mapToResponse(location);
         }
 
-        location.setCurrentWeight(newWeight);
-        location.setCurrentVolume(newVolume);
+        @Override
+        @Transactional(readOnly = true)
+        public List<StorageLocationResponse> getAllLocations() {
+                return storageLocationRepository.findAll().stream()
+                                .map(this::mapToResponse)
+                                .collect(Collectors.toList());
+        }
 
-        // Let the entity dynamically determine if it's FULL or OCCUPIED based on new
-        // capacity.
-        location.updateAvailabilityStatus();
+        @Override
+        public StorageLocationResponse updateLocation(Long id, StorageLocationRequest request) {
+                log.info("Updating storage location with ID: {}", id);
 
-        StorageLocation updated = storageLocationRepository.save(location);
-        return mapToResponse(updated);
-    }
+                StorageLocation location = storageLocationRepository.findById(id)
+                                .orElseThrow(() -> new NotFoundException("Storage location not found with id: " + id));
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<StorageLocationResponse> getAvailableLocations() {
-        return storageLocationRepository.findByAvailabilityStatus(LocationAvailabilityStatus.AVAILABLE).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
+                // Check for duplicate if zone/rack/bin is being changed
+                storageLocationRepository.findByZoneAndRackNoAndBinNo(request.zone(), request.rackNo(), request.binNo())
+                                .filter(existing -> !existing.getLocationId().equals(id))
+                                .ifPresent(existing -> {
+                                        throw new IllegalArgumentException(
+                                                        String.format("Another storage location already exists: Zone=%s, Rack=%s, Bin=%s",
+                                                                        request.zone(), request.rackNo(),
+                                                                        request.binNo()));
+                                });
 
-    private StorageLocationResponse mapToResponse(StorageLocation location) {
-        return new StorageLocationResponse(
-                location.getLocationId(),
-                location.getZone(),
-                location.getRackNo(),
-                location.getBinNo(),
-                location.getMaxWeight(),
-                location.getMaxVolume(),
-                location.getCurrentWeight(),
-                location.getCurrentVolume(),
-                location.getAvailabilityStatus());
-    }
+                location.setZone(request.zone());
+                location.setRackNo(request.rackNo());
+                location.setBinNo(request.binNo());
+                location.setMaxWeight(request.maxWeight());
+                location.setMaxVolume(request.maxVolume());
+
+                location.updateAvailabilityStatus();
+
+                StorageLocation updated = storageLocationRepository.save(location);
+                return mapToResponse(updated);
+        }
+
+        @Override
+        public void deleteLocation(Long id) {
+                StorageLocation location = storageLocationRepository.findById(id)
+                                .orElseThrow(() -> new NotFoundException("Storage location not found with id: " + id));
+                storageLocationRepository.delete(location);
+                log.info("Deleted storage location with ID: {}", id);
+        }
+
+        @Override
+        public StorageLocationResponse updateCapacity(Long id, BigDecimal addedWeight, BigDecimal addedVolume) {
+                log.info("Updating capacity for location ID {}: AddedWeight={}, AddedVolume={}", id, addedWeight,
+                                addedVolume);
+
+                StorageLocation location = storageLocationRepository.findById(id)
+                                .orElseThrow(() -> new NotFoundException("Storage location not found with id: " + id));
+
+                BigDecimal addW = addedWeight != null ? addedWeight : BigDecimal.ZERO;
+                BigDecimal addV = addedVolume != null ? addedVolume : BigDecimal.ZERO;
+
+                BigDecimal newWeight = location.getCurrentWeight().add(addW);
+                BigDecimal newVolume = location.getCurrentVolume().add(addV);
+
+                // Guard: weight/volume cannot drop below zero (negative addedWeight/Volume
+                // means removal)
+                if (newWeight.compareTo(BigDecimal.ZERO) < 0) {
+                        throw new IllegalArgumentException(
+                                        String.format("Weight reduction would result in negative currentWeight for location ID %d. "
+                                                        +
+                                                        "Current: %s, Reducing by: %s",
+                                                        id, location.getCurrentWeight(), addW.negate()));
+                }
+
+                if (newVolume.compareTo(BigDecimal.ZERO) < 0) {
+                        throw new IllegalArgumentException(
+                                        String.format("Volume reduction would result in negative currentVolume for location ID %d. "
+                                                        +
+                                                        "Current: %s, Reducing by: %s",
+                                                        id, location.getCurrentVolume(), addV.negate()));
+                }
+
+                // Guard: fail if exceeds max capacity limits
+                if (location.getMaxWeight() != null && newWeight.compareTo(location.getMaxWeight()) > 0) {
+                        throw new CapacityExceededException(
+                                        String.format("Weight capacity exceeded for location ID %d. Current: %s, Adding: %s, Max: %s",
+                                                        id, location.getCurrentWeight(), addW,
+                                                        location.getMaxWeight()));
+                }
+
+                if (location.getMaxVolume() != null && newVolume.compareTo(location.getMaxVolume()) > 0) {
+                        throw new CapacityExceededException(
+                                        String.format("Volume capacity exceeded for location ID %d. Current: %s, Adding: %s, Max: %s",
+                                                        id, location.getCurrentVolume(), addV,
+                                                        location.getMaxVolume()));
+                }
+
+                location.setCurrentWeight(newWeight);
+                location.setCurrentVolume(newVolume);
+
+                // Let the entity dynamically determine if it's FULL or OCCUPIED based on new
+                // capacity.
+                location.updateAvailabilityStatus();
+
+                StorageLocation updated = storageLocationRepository.save(location);
+                return mapToResponse(updated);
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public List<StorageLocationResponse> getAvailableLocations() {
+                return storageLocationRepository.findByAvailabilityStatus(LocationAvailabilityStatus.AVAILABLE).stream()
+                                .map(this::mapToResponse)
+                                .collect(Collectors.toList());
+        }
+
+        private StorageLocationResponse mapToResponse(StorageLocation location) {
+                return new StorageLocationResponse(
+                                location.getLocationId(),
+                                location.getZone(),
+                                location.getRackNo(),
+                                location.getBinNo(),
+                                location.getMaxWeight(),
+                                location.getMaxVolume(),
+                                location.getCurrentWeight(),
+                                location.getCurrentVolume(),
+                                location.getAvailabilityStatus());
+        }
 }

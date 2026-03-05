@@ -1,0 +1,406 @@
+{
+  "info": {
+    "name": "Supplier Management Service",
+    "description": "API documentation for the Supplier Management Service.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8081",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Purchase Orders",
+      "description": "Purchase order management and integration endpoints",
+      "item": [
+        {
+          "name": "Create Purchase Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supplierId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n  \"expectedDeliveryDate\": \"2023-12-01T00:00:00Z\",\n  \"items\": [\n    {\n      \"productId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n      \"quantity\": 10,\n      \"unitPrice\": 100.0\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-orders"]
+            },
+            "description": "Create a new purchase order in DRAFT status"
+          }
+        },
+        {
+          "name": "Get Purchase Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-orders/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-orders", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                  "description": "Purchase Order UUID"
+                }
+              ]
+            },
+            "description": "Get purchase order by ID"
+          }
+        },
+        {
+          "name": "Get All Purchase Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-orders"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "DRAFT",
+                  "disabled": true,
+                  "description": "Optional status filter (e.g. DRAFT, SUBMITTED, APPROVED)"
+                },
+                {
+                  "key": "supplierId",
+                  "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                  "disabled": true,
+                  "description": "Optional supplier ID filter"
+                }
+              ]
+            },
+            "description": "Get all purchase orders with optional filters"
+          }
+        },
+        {
+          "name": "Submit Purchase Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-orders/:id/submit",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-orders", ":id", "submit"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                  "description": "Purchase Order UUID"
+                }
+              ]
+            },
+            "description": "Submit purchase order (DRAFT → SUBMITTED)"
+          }
+        },
+        {
+          "name": "Approve Purchase Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-orders/:id/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-orders", ":id", "approve"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                  "description": "Purchase Order UUID"
+                }
+              ]
+            },
+            "description": "Approve purchase order (SUBMITTED → APPROVED)"
+          }
+        },
+        {
+          "name": "Send Purchase Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-orders/:id/send",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-orders", ":id", "send"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                  "description": "Purchase Order UUID"
+                }
+              ]
+            },
+            "description": "Send purchase order to supplier (APPROVED → SENT)"
+          }
+        },
+        {
+          "name": "Cancel Purchase Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-orders/:id/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-orders", ":id", "cancel"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                  "description": "Purchase Order UUID"
+                }
+              ]
+            },
+            "description": "Cancel purchase order (not allowed if RECEIVED)"
+          }
+        },
+        {
+          "name": "Update PO Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-orders/:id/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-orders", ":id", "status"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                  "description": "Purchase Order UUID"
+                }
+              ]
+            },
+            "description": "Generic status update (enforces lifecycle rules)"
+          }
+        },
+        {
+          "name": "Validate PO for receiving",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-orders/validate/:poNumber",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-orders", "validate", ":poNumber"],
+              "variable": [
+                {
+                  "key": "poNumber",
+                  "value": "PO-12345",
+                  "description": "Purchase Order Number"
+                }
+              ]
+            },
+            "description": "Validate PO for receiving (integration endpoint)"
+          }
+        },
+        {
+          "name": "Receive goods against a PO",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receivedItems\": [\n    {\n      \"productId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n      \"quantityReceived\": 5\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-orders/receive-update/:poNumber",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-orders", "receive-update", ":poNumber"],
+              "variable": [
+                {
+                  "key": "poNumber",
+                  "value": "PO-12345",
+                  "description": "Purchase Order Number"
+                }
+              ]
+            },
+            "description": "Receive goods against a PO (integration endpoint)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Suppliers",
+      "description": "Supplier management endpoints",
+      "item": [
+        {
+          "name": "Create a new supplier",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Supplier\",\n  \"contactPerson\": \"John Doe\",\n  \"email\": \"contact@testsupplier.com\",\n  \"phone\": \"+123456789\",\n  \"address\": \"123 Supplier St, City, Country\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/suppliers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "suppliers"]
+            },
+            "description": "Create a new supplier"
+          }
+        },
+        {
+          "name": "Get supplier by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/suppliers/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "suppliers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                  "description": "Supplier UUID"
+                }
+              ]
+            },
+            "description": "Get supplier by ID"
+          }
+        },
+        {
+          "name": "Get all suppliers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/suppliers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "suppliers"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "disabled": true,
+                  "description": "Optional status filter (e.g. ACTIVE, INACTIVE)"
+                }
+              ]
+            },
+            "description": "Get all suppliers with optional status filter"
+          }
+        },
+        {
+          "name": "Update supplier details",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Supplier Name\",\n  \"contactPerson\": \"Jane Doe\",\n  \"email\": \"jane@testsupplier.com\",\n  \"phone\": \"+987654321\",\n  \"address\": \"456 New St, City, Country\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/suppliers/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "suppliers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                  "description": "Supplier UUID"
+                }
+              ]
+            },
+            "description": "Update supplier details"
+          }
+        },
+        {
+          "name": "Update supplier status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"INACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/suppliers/:id/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "suppliers", ":id", "status"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+                  "description": "Supplier UUID"
+                }
+              ]
+            },
+            "description": "Update supplier status (ACTIVE / INACTIVE)"
+          }
+        }
+      ]
+    }
+  ]
+}

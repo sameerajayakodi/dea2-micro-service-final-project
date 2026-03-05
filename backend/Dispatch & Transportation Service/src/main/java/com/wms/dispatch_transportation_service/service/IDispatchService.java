@@ -9,11 +9,11 @@ public interface IDispatchService {
 
     List<DispatchResponse> getAllDispatches();
 
-    DispatchResponse getDispatchById(Long id);
+    DispatchResponse getDispatchById(String id);
 
     DispatchResponse createDispatch(DispatchRequest request);
 
-    DispatchResponse updateDispatch(Long id, DispatchRequest request);
+    DispatchResponse updateDispatch(String id, DispatchRequest request);
 
-    void deleteDispatch(Long id);
+    void deleteDispatch(String id);
 }

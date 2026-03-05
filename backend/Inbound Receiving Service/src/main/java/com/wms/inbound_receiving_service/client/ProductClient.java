@@ -5,13 +5,12 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "product-service", url = "${app.product-service-url}")
+@FeignClient(name = "product-service", url = "http://51.20.184.86:8080")
 public interface ProductClient {
-    // Used in receiveShipment()
+
     @GetMapping("/api/v1/products/name/{name}")
     Product getProductByName(@PathVariable("name") String name);
 
-    // Used in getAllReceiptItems() and updateShipmentStatus()
     @GetMapping("/api/v1/products/{id}")
-    Product getProductById(@PathVariable("id") Long id);
+    Product getProductById(@PathVariable("id") String id);
 }
