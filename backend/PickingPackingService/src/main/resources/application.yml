@@ -8,11 +8,11 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
-        dialect: ${SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
 server:
@@ -48,11 +48,12 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
     disable-swagger-default-url: true
+    url: /api-docs
 
 eureka:
   client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://131.163.97.60:8761/eureka/}
+    serviceUrl:
+      defaultZone: http://131.163.97.60:8761/eureka/
     fetch-registry: true
     register-with-eureka: true
   instance:

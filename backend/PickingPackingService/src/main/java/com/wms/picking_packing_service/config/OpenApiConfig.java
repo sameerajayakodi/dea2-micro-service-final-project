@@ -23,8 +23,8 @@ public class OpenApiConfig {
         contact.setEmail("support@wms.com");
 
         Info info = new Info()
-                .title("Picking & Packing Service API")
-                .version("1.0.0")
+            .title("Picking & Packing Service API")
+            .version("1.0.0")
                 .description("API for managing picking and packing operations in the Warehouse Management System. " +
                         "This service handles order fulfillment workflows including picking items from inventory, " +
                         "packing orders, and coordinating with Order, Inventory, and Worker services.")
