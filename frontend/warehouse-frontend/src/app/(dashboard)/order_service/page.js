@@ -28,7 +28,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import dayjs from "dayjs";
-import { getAllOrders, createOrder, getProducts } from "@/services/orders/ordersApi";
+import { getAllOrders, createOrder, getProducts, getCustomers } from "@/services/orders/ordersApi";
 
 /* ── Status → Chip color mapping ─────────────────────────────── */
 const STATUS_MAP = {
@@ -61,6 +61,7 @@ export default function OrderServicePage() {
   const [partialAllowed, setPartialAllowed] = useState(false);
   const [items, setItems] = useState([{ itemId: "", quantity: 1, unitPrice: 0 }]);
   const [products, setProducts]             = useState([]);
+  const [customers, setCustomers]           = useState([]);
   const [submitting, setSubmitting]         = useState(false);
 
   // ── Toast state ──
@@ -70,9 +71,26 @@ export default function OrderServicePage() {
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await getAllOrders();
-      const rows = Array.isArray(data) ? data : Array.isArray(data?.content) ? data.content : [];
+      const [oRes, cRes, pRes] = await Promise.allSettled([
+        getAllOrders(),
+        getCustomers(),
+        getProducts()
+      ]);
+      const oData = oRes.status === "fulfilled" ? oRes.value.data : [];
+      const rows = Array.isArray(oData) ? oData : Array.isArray(oData?.content) ? oData.content : [];
       setOrders(rows);
+
+      if (cRes.status === "fulfilled") {
+        const cData = cRes.value.data;
+        const cRows = Array.isArray(cData) ? cData : Array.isArray(cData?.content) ? cData.content : [];
+        setCustomers(cRows);
+      }
+
+      if (pRes.status === "fulfilled") {
+        const pData = pRes.value.data;
+        const pRows = Array.isArray(pData) ? pData : Array.isArray(pData?.content) ? pData.content : [];
+        setProducts(pRows);
+      }
     } catch (err) {
       console.error("Failed to fetch orders:", err);
       setToast({ open: true, severity: "error", msg: "Failed to load orders" });
@@ -106,12 +124,17 @@ export default function OrderServicePage() {
   const handleOpenWizard = async () => {
     setWizardOpen(true);
     try {
-      const { data } = await getProducts();
-      const pRows = Array.isArray(data) ? data : Array.isArray(data?.content) ? data.content : [];
+      const [{ data: pData }, { data: cData }] = await Promise.all([
+        getProducts(),
+        getCustomers()
+      ]);
+      const pRows = Array.isArray(pData) ? pData : Array.isArray(pData?.content) ? pData.content : [];
+      const cRows = Array.isArray(cData) ? cData : Array.isArray(cData?.content) ? cData.content : [];
       setProducts(pRows);
+      setCustomers(cRows);
     } catch (err) {
-      console.error("Failed to fetch products:", err);
-      setToast({ open: true, severity: "warning", msg: "Could not load products list" });
+      console.error("Failed to fetch wizard data:", err);
+      setToast({ open: true, severity: "warning", msg: "Could not load products or customers list" });
     }
   };
 
@@ -174,7 +197,27 @@ export default function OrderServicePage() {
         </Typography>
       ),
     },
-    { field: "customerId", headerName: "Customer ID", flex: 0.7, minWidth: 140 },
+    {
+      field: "customerId",
+      headerName: "Customer",
+      flex: 0.9,
+      minWidth: 160,
+      renderCell: (params) => {
+        const cId = params.value;
+        const c = customers.find(x => String(x.customerId || x.id) === String(cId));
+        const name = c ? (c.customerName || c.name || c.firstName) : null;
+        return (
+          <Box>
+             <Typography variant="body2" sx={{ color: "#1e293b", fontWeight: 500 }}>
+               {name || "Unknown"}
+             </Typography>
+             <Typography variant="caption" sx={{ color: "#94a3b8", display: "block" }}>
+               {cId}
+             </Typography>
+          </Box>
+        );
+      }
+    },
     {
       field: "createdAt",
       headerName: "Date",
@@ -339,13 +382,52 @@ export default function OrderServicePage() {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3, mt: 1 }}>
             {/* Customer + switch */}
             <Box sx={{ display: "flex", gap: 3, alignItems: "center", flexWrap: "wrap" }}>
-              <TextField
-                label="Customer ID"
-                value={customerId}
-                onChange={(e) => setCustomerId(e.target.value)}
+              <Autocomplete
+                options={customers}
+                getOptionLabel={(c) => {
+                  const nameStr = c.customerName || c.name || "";
+                  const cId = c.customerId || c.id || "";
+                  return nameStr ? `${nameStr} - ${c.phone || cId}` : `Customer ${cId}`;
+                }}
+                value={customers.find(c => String(c.customerId || c.id) === String(customerId)) || null}
+                onChange={(_, newValue) => setCustomerId(newValue ? (newValue.customerId || newValue.id) : "")}
+                isOptionEqualToValue={(option, value) => String(option.customerId || option.id) === String(value.customerId || value.id)}
                 size="small"
-                fullWidth
                 sx={{ flex: 1, minWidth: 200 }}
+                ListboxProps={{ style: { maxHeight: 300, overflow: "auto" } }}
+                renderInput={(params) => <TextField {...params} label="Customer" placeholder="Select Customer" />}
+                noOptionsText={customers.length === 0 ? "Loading or no customers..." : "No match"}
+                renderOption={(props, option, { selected }) => {
+                  const { key, ...otherProps } = props;
+                  const nameStr = option.customerName || option.name || "";
+                  const cId = option.customerId || option.id || "";
+                  const statusLabel = option.status || "UNKNOWN";
+                  const statusColor = statusLabel.toUpperCase() === "ACTIVE" ? "success" : "default";
+
+                  return (
+                    <MenuItem key={key} {...otherProps} sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", py: 1, borderBottom: "1px solid #f1f5f9" }}>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", mb: 0.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: "#1e293b" }}>
+                          {nameStr || `Customer ${cId}`}
+                        </Typography>
+                        <Chip
+                          label={statusLabel}
+                          color={statusColor}
+                          size="small"
+                          sx={{ height: 20, fontSize: "0.7rem", fontWeight: 600 }}
+                        />
+                      </Box>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+                        <Typography variant="caption" sx={{ color: "#64748b" }}>
+                          {option.email || cId}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 600 }}>
+                          {option.phone || ""}
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                  );
+                }}
               />
               <FormControlLabel
                 control={

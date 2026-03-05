@@ -34,7 +34,7 @@ public class InventoryClient {
             Integer quantityReserved,
             Integer quantityDamaged,
             Integer totalAvailable,
-            Long productId,
+            String productId,
             String productName,
             Long locationId
     ) {}

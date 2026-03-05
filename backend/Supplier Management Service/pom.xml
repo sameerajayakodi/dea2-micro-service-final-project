@@ -96,7 +96,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<mainClass>com.wms.supplier.management.service.SupplierManagementServiceApplication</mainClass>
+					<mainClass>com.wms.supplyservice.SupplyServiceApplication</mainClass>
 				</configuration>
 			</plugin>
 		</plugins>

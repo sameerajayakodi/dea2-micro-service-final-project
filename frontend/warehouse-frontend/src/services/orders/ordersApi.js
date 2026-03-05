@@ -2,8 +2,9 @@ import api from "@/lib/axios";
 
 const BASE = "/api/v1/orders";
 
-// ── Products ──────────────────────────────────────────
+// ── Products & Customers ──────────────────────────────
 export const getProducts         = ()          => api.get("/api/products");
+export const getCustomers        = ()          => api.get("/api/customers");
 
 // ── CRUD ──────────────────────────────────────────────
 export const getAllOrders        = ()          => api.get(BASE);
