@@ -5,13 +5,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Data // Generates getSupplierId() and getSupplierName()
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Supplier {
-    private Long supplierId;   // Matches the PK in your Supplier Service
-    private String supplierName;
-    private String contactNo;
+    private String id;
+    private String supplierCode;
+    private String name;
     private String address;
+    private String phone;
+    private String email;
+    private String status;
 }

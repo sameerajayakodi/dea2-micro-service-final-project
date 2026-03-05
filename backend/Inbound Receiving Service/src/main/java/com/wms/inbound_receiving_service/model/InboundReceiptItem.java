@@ -25,7 +25,5 @@ public class InboundReceiptItem {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "receipt_id", nullable = false)
     private InboundReceipt receipt;
-
-    // Refactored: Store only the ID from the external Product Service
-    private Long productId;
+    private String productId;
 }

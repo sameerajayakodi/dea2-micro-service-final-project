@@ -5,13 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Data // Generates getProductId()
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Product {
-    private Long productId;     // Matches the PK in your Product Service
-    private String productName;
+    private String id;
+    private String name;
     private String skuCode;
     private String category;
+    private Double price;
+    private Boolean active;
 }
