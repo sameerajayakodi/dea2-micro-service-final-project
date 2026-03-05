@@ -34,9 +34,9 @@ jobs:
           cp 'backend/Storage Location Service/target/'*.jar /home/azureuser/backend-app/application.jar
 
           # 3. Create the .env file with database credentials securely
-          echo "DB_URL=j" > /home/azureuser/backend-app/.env
-          echo "DB_USERNAME=" >> /home/azureuser/backend-app/.env
-          echo "DB_PASSWORD=" >> /home/azureuser/backend-app/.env
+          echo "DB_URL=${{ secrets.DB_URL }}" > .env
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
 
           # 4. Secure the .env file so only the 'azureuser' user can read it
           chmod 600 /home/azureuser/backend-app/.env
