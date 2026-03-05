@@ -44,7 +44,7 @@ spring:
           predicates:
             - Path=/api/products/**
         - id: picking-packing-service
-          uri: lb://Picking_Packing_Service
+          uri: lb://PICKING-PACKING-SERVICE
           predicates:
             - Path=/api/v1/pick-pack/**
         - id: order-service
@@ -55,7 +55,7 @@ spring:
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://131.163.97.60:8761/eureka/
 
 logging:
   level:

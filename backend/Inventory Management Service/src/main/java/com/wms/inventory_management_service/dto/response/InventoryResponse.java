@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -23,7 +24,7 @@ public class InventoryResponse {
     private Inventory.StockStatus stockStatus;
     private Integer lowStockThreshold;
     private Boolean isLowStock;
-    private Long productId;
+    private UUID productId;
     private String productName;
     private Long locationId;
     private String zone;

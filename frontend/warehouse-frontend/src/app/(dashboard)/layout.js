@@ -2,14 +2,15 @@
 
 import BadgeIcon from "@mui/icons-material/Badge";
 import BusinessIcon from "@mui/icons-material/Business";
+import CategoryIcon from "@mui/icons-material/Category";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import MenuIcon from "@mui/icons-material/Menu";
 import MoveToInboxIcon from "@mui/icons-material/MoveToInbox";
+import OutboxIcon from "@mui/icons-material/Outbox";
 import PeopleIcon from "@mui/icons-material/People";
-import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import WarehouseIcon from "@mui/icons-material/Warehouse";
 import {
@@ -63,9 +64,14 @@ const navItems = [
     icon: <ShoppingCartIcon />,
   },
   {
-    label: "Picking Service",
-    path: "/picking_service",
-    icon: <PlaylistAddCheckIcon />,
+    label: "Pick & Pack Service",
+    path: "/pick_pack_service",
+    icon: <OutboxIcon />,
+  },
+  {
+    label: "Product Service",
+    path: "/product_service",
+    icon: <CategoryIcon />,
   },
   {
     label: "Supplier Service",

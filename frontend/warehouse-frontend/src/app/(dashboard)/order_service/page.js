@@ -19,6 +19,8 @@ import {
   FormControlLabel,
   Snackbar,
   Alert,
+  MenuItem,
+  Autocomplete,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
@@ -26,7 +28,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import dayjs from "dayjs";
-import { getAllOrders, createOrder } from "@/services/orders/ordersApi";
+import { getAllOrders, createOrder, getProducts } from "@/services/orders/ordersApi";
 
 /* ── Status → Chip color mapping ─────────────────────────────── */
 const STATUS_MAP = {
@@ -58,6 +60,7 @@ export default function OrderServicePage() {
   const [customerId, setCustomerId]         = useState("");
   const [partialAllowed, setPartialAllowed] = useState(false);
   const [items, setItems] = useState([{ itemId: "", quantity: 1, unitPrice: 0 }]);
+  const [products, setProducts]             = useState([]);
   const [submitting, setSubmitting]         = useState(false);
 
   // ── Toast state ──
@@ -87,8 +90,29 @@ export default function OrderServicePage() {
     setItems(prev => {
       const copy = [...prev];
       copy[idx] = { ...copy[idx], [field]: value };
+      
+      // If we selected a product, try to auto-fill its price if available
+      if (field === "itemId") {
+        const selectedProd = products.find((p) => String(p.id) === String(value));
+        if (selectedProd && selectedProd.price !== undefined) {
+           copy[idx].unitPrice = selectedProd.price;
+        }
+      }
+      
       return copy;
     });
+  };
+
+  const handleOpenWizard = async () => {
+    setWizardOpen(true);
+    try {
+      const { data } = await getProducts();
+      const pRows = Array.isArray(data) ? data : Array.isArray(data?.content) ? data.content : [];
+      setProducts(pRows);
+    } catch (err) {
+      console.error("Failed to fetch products:", err);
+      setToast({ open: true, severity: "warning", msg: "Could not load products list" });
+    }
   };
 
   // ── Submit order ──
@@ -242,7 +266,7 @@ export default function OrderServicePage() {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => setWizardOpen(true)}
+              onClick={handleOpenWizard}
               sx={{
                 bgcolor: "#6366f1",
                 color: "#fff",
@@ -342,12 +366,40 @@ export default function OrderServicePage() {
             {/* Item rows */}
             {items.map((item, idx) => (
               <Box key={idx} sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-                <TextField
-                  label="Item ID"
-                  value={item.itemId}
-                  onChange={(e) => handleItemChange(idx, "itemId", e.target.value)}
+                <Autocomplete
+                  options={products}
+                  getOptionLabel={(p) => p.name ? `${p.name} - ${p.skuCode || ""}` : `Product ${p.id}`}
+                  value={products.find(p => String(p.id) === String(item.itemId)) || null}
+                  onChange={(_, newValue) => handleItemChange(idx, "itemId", newValue ? newValue.id : "")}
+                  isOptionEqualToValue={(option, value) => String(option.id) === String(value.id)}
                   size="small"
-                  sx={{ flex: 2 }}
+                  sx={{ flex: 2, minWidth: 250 }}
+                  ListboxProps={{ style: { maxHeight: 300, overflow: "auto" } }}
+                  renderInput={(params) => <TextField {...params} label="Product" />}
+                  noOptionsText={products.length === 0 ? "Loading or no products..." : "No match"}
+                  renderOption={(props, option, { selected }) => {
+                    const { key, ...otherProps } = props;
+                    return (
+                      <MenuItem key={key} {...otherProps} sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", py: 1, borderBottom: "1px solid #f1f5f9" }}>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%", mb: 0.5 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: "#1e293b" }}>
+                            {option.name}
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: "#10b981" }}>
+                            ${Number(option.price || 0).toFixed(2)}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+                          <Typography variant="caption" sx={{ color: "#64748b" }}>
+                            SKU: {option.skuCode || "N/A"}
+                          </Typography>
+                          {option.category && (
+                            <Chip size="small" label={option.category} sx={{ height: 16, fontSize: "0.6rem", bgcolor: "#f1f5f9", color: "#475569" }} />
+                          )}
+                        </Box>
+                      </MenuItem>
+                    );
+                  }}
                 />
                 <TextField
                   label="Qty"

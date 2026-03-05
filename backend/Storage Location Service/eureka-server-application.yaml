@@ -1,0 +1,40 @@
+# Eureka Server – application.yaml
+# Place this file at: src/main/resources/application.yaml
+# in your standalone Eureka Server Spring Boot project.
+
+spring:
+  application:
+    name: eureka-server
+
+server:
+  port: ${SERVER_PORT:8761}
+
+eureka:
+  instance:
+    # Use IP address instead of hostname for reliable registration on Azure
+    prefer-ip-address: true
+    hostname: ${EUREKA_HOSTNAME:localhost}
+  client:
+    # This IS the registry — it must not register itself or fetch from itself
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+  server:
+    # Disable self-preservation mode in cloud/dev environments.
+    # In self-preservation mode, Eureka stops evicting unreachable instances
+    # when heartbeats drop below threshold. For Azure deployments where
+    # instances start/stop often, it's safer to disable this and let
+    # instances expire normally.
+    enable-self-preservation: false
+    # How quickly to evict instances that miss heartbeats (default: 60s)
+    eviction-interval-timer-in-ms: 5000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

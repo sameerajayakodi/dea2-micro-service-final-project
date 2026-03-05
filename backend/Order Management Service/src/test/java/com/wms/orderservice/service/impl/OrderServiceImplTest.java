@@ -210,7 +210,7 @@ class OrderServiceImplTest {
         @DisplayName("Should validate and set VALIDATED when canFulfill=true")
         void validateOrder_canFulfill() {
             when(orderRepository.findById(orderId)).thenReturn(Optional.of(sampleOrder));
-            when(inventoryClient.checkAvailability(orderId))
+            when(inventoryClient.checkAvailability(sampleOrder))
                     .thenReturn(AvailabilityResponse.builder()
                             .canFulfill(true)
                             .missingItems(List.of())
@@ -229,7 +229,7 @@ class OrderServiceImplTest {
         void validateOrder_rejected() {
             sampleOrder.setPartialAllowed(false);
             when(orderRepository.findById(orderId)).thenReturn(Optional.of(sampleOrder));
-            when(inventoryClient.checkAvailability(orderId))
+            when(inventoryClient.checkAvailability(sampleOrder))
                     .thenReturn(AvailabilityResponse.builder()
                             .canFulfill(false)
                             .missingItems(List.of(
@@ -249,7 +249,7 @@ class OrderServiceImplTest {
         void validateOrder_partialAllowed() {
             sampleOrder.setPartialAllowed(true);
             when(orderRepository.findById(orderId)).thenReturn(Optional.of(sampleOrder));
-            when(inventoryClient.checkAvailability(orderId))
+            when(inventoryClient.checkAvailability(sampleOrder))
                     .thenReturn(AvailabilityResponse.builder()
                             .canFulfill(false)
                             .missingItems(List.of())
@@ -284,7 +284,7 @@ class OrderServiceImplTest {
         @DisplayName("FULL approval — sufficient stock")
         void approveOrder_full_success() {
             when(orderRepository.findById(orderId)).thenReturn(Optional.of(sampleOrder));
-            when(inventoryClient.checkAvailability(orderId))
+            when(inventoryClient.checkAvailability(sampleOrder))
                     .thenReturn(AvailabilityResponse.builder().canFulfill(true).build());
             when(orderRepository.save(any(Order.class))).thenReturn(sampleOrder);
 
@@ -297,14 +297,14 @@ class OrderServiceImplTest {
             assertEquals(OrderStatus.APPROVED, sampleOrder.getStatus());
             sampleOrder.getItems().forEach(item ->
                     assertEquals(item.getRequestedQty(), item.getApprovedQty()));
-            verify(inventoryClient).reserveInventory(eq(orderId), anyList());
+            verify(inventoryClient).reserveInventory(any(Order.class));
         }
 
         @Test
         @DisplayName("FULL approval — insufficient stock — should throw")
         void approveOrder_full_insufficientStock() {
             when(orderRepository.findById(orderId)).thenReturn(Optional.of(sampleOrder));
-            when(inventoryClient.checkAvailability(orderId))
+            when(inventoryClient.checkAvailability(sampleOrder))
                     .thenReturn(AvailabilityResponse.builder().canFulfill(false).build());
 
             ApproveOrderRequest request = ApproveOrderRequest.builder()
@@ -318,7 +318,7 @@ class OrderServiceImplTest {
         @DisplayName("AUTO approval — sufficient stock → APPROVED")
         void approveOrder_auto_sufficientStock() {
             when(orderRepository.findById(orderId)).thenReturn(Optional.of(sampleOrder));
-            when(inventoryClient.checkAvailability(orderId))
+            when(inventoryClient.checkAvailability(sampleOrder))
                     .thenReturn(AvailabilityResponse.builder().canFulfill(true).build());
             when(orderRepository.save(any(Order.class))).thenReturn(sampleOrder);
 
@@ -336,7 +336,7 @@ class OrderServiceImplTest {
         void approveOrder_auto_partialApproved() {
             sampleOrder.setPartialAllowed(true);
             when(orderRepository.findById(orderId)).thenReturn(Optional.of(sampleOrder));
-            when(inventoryClient.checkAvailability(orderId))
+            when(inventoryClient.checkAvailability(sampleOrder))
                     .thenReturn(AvailabilityResponse.builder()
                             .canFulfill(false)
                             .suggestedApprovedItems(List.of(
@@ -364,7 +364,7 @@ class OrderServiceImplTest {
         void approveOrder_auto_notPartialAllowed() {
             sampleOrder.setPartialAllowed(false);
             when(orderRepository.findById(orderId)).thenReturn(Optional.of(sampleOrder));
-            when(inventoryClient.checkAvailability(orderId))
+            when(inventoryClient.checkAvailability(sampleOrder))
                     .thenReturn(AvailabilityResponse.builder().canFulfill(false).build());
 
             ApproveOrderRequest request = ApproveOrderRequest.builder()
@@ -378,7 +378,7 @@ class OrderServiceImplTest {
         @DisplayName("PARTIAL approval — valid quantities")
         void approveOrder_partial_success() {
             when(orderRepository.findById(orderId)).thenReturn(Optional.of(sampleOrder));
-            when(inventoryClient.checkAvailability(orderId))
+            when(inventoryClient.checkAvailability(sampleOrder))
                     .thenReturn(AvailabilityResponse.builder().canFulfill(true).build());
             when(orderRepository.save(any(Order.class))).thenReturn(sampleOrder);
 
@@ -401,7 +401,7 @@ class OrderServiceImplTest {
         @DisplayName("PARTIAL approval — approvedQty > requestedQty → throws")
         void approveOrder_partial_exceedsRequested() {
             when(orderRepository.findById(orderId)).thenReturn(Optional.of(sampleOrder));
-            when(inventoryClient.checkAvailability(orderId))
+            when(inventoryClient.checkAvailability(sampleOrder))
                     .thenReturn(AvailabilityResponse.builder().canFulfill(true).build());
 
             ApproveOrderRequest request = ApproveOrderRequest.builder()
@@ -418,7 +418,7 @@ class OrderServiceImplTest {
         @DisplayName("PARTIAL approval — unknown item → throws")
         void approveOrder_partial_unknownItem() {
             when(orderRepository.findById(orderId)).thenReturn(Optional.of(sampleOrder));
-            when(inventoryClient.checkAvailability(orderId))
+            when(inventoryClient.checkAvailability(sampleOrder))
                     .thenReturn(AvailabilityResponse.builder().canFulfill(true).build());
 
             ApproveOrderRequest request = ApproveOrderRequest.builder()
@@ -435,7 +435,7 @@ class OrderServiceImplTest {
         @DisplayName("PARTIAL approval — empty items list → throws")
         void approveOrder_partial_emptyList() {
             when(orderRepository.findById(orderId)).thenReturn(Optional.of(sampleOrder));
-            when(inventoryClient.checkAvailability(orderId))
+            when(inventoryClient.checkAvailability(sampleOrder))
                     .thenReturn(AvailabilityResponse.builder().canFulfill(true).build());
 
             ApproveOrderRequest request = ApproveOrderRequest.builder()

@@ -13,6 +13,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        hbm2ddl.halt_on_error: true
 
 server:
   port: ${SERVER_PORT:8081}
@@ -21,15 +22,26 @@ server:
 eureka:
   client:
     serviceUrl:
-      defaultZone: ${EUREKA_URL:http://131.163.97.60:8761/eureka/}
+      # This points to your Eureka Server on the other Azure VM
+      defaultZone: http://131.163.97.60:8761/eureka/
     fetch-registry: true
     register-with-eureka: true
   instance:
+    # Forces Eureka to use the Public IP instead of the internal 172.x.x.x address
     prefer-ip-address: true
-    ip-address: ${INSTANCE_IP:35.88.199.189}
+    ip-address: 35.88.199.189
+
+    # Creates a unique ID so Eureka doesn't get confused if you restart the service
     instance-id: ${spring.application.name}:${random.value}
+
+    # Optional: Helps Gateway detect if the service goes down faster
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 20
+
+# Internal token used when calling internal services (Product Catalog) through Eureka
+internal:
+  auth:
+    token: ${INTERNAL_AUTH_TOKEN:S3CR3T}
 
 springdoc:
   api-docs:

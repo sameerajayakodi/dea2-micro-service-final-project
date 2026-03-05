@@ -7,6 +7,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import Inventory2Icon from "@mui/icons-material/Inventory2";
 import { useRouter } from "next/navigation";
 import {
+  Autocomplete,
   Box,
   Button,
   Chip,
@@ -61,6 +62,7 @@ function InventoryFormDialog({
   open,
   inventory,
   products,
+  productsLoading,
   locations,
   loading,
   onClose,
@@ -119,10 +121,13 @@ function InventoryFormDialog({
       quantityDamaged: Number(form.quantityDamaged || 0),
       expiryDate: form.expiryDate || null,
       lowStockThreshold: form.lowStockThreshold ? Number(form.lowStockThreshold) : null,
-      productId: Number(form.productId),
+      productId: form.productId,
       locationId: Number(form.locationId),
     });
   };
+
+  const selectedProduct =
+    products.find((p) => String(p.productId) === String(form.productId)) || null;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -143,21 +148,36 @@ function InventoryFormDialog({
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                select
-                fullWidth
-                label="Product"
-                value={form.productId}
-                onChange={(e) => setForm({ ...form, productId: e.target.value })}
-                error={!!errors.productId}
-                helperText={errors.productId}
-              >
-                {products.map((p) => (
-                  <MenuItem key={p.productId} value={p.productId}>
-                    {p.productName}
-                  </MenuItem>
-                ))}
-              </TextField>
+              <Autocomplete
+                options={products}
+                loading={productsLoading}
+                value={selectedProduct}
+                isOptionEqualToValue={(option, value) =>
+                  String(option.productId) === String(value.productId)
+                }
+                getOptionLabel={(option) => option.productName || ""}
+                onChange={(_, value) =>
+                  setForm({ ...form, productId: value ? String(value.productId) : "" })
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    fullWidth
+                    label="Product"
+                    error={!!errors.productId}
+                    helperText={errors.productId}
+                    InputProps={{
+                      ...params.InputProps,
+                      endAdornment: (
+                        <>
+                          {productsLoading ? <CircularProgress color="inherit" size={18} /> : null}
+                          {params.InputProps.endAdornment}
+                        </>
+                      ),
+                    }}
+                  />
+                )}
+              />
             </Grid>
 
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -295,14 +315,42 @@ export default function InventoriesPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [invRes, prodRes, locRes] = await Promise.all([
+      const [invResult, prodResult, locResult] = await Promise.allSettled([
         getAllInventories(),
         getAllInventoryProducts(),
         getAllStorageLocations(),
       ]);
-      setInventories(invRes.data);
-      setProducts(prodRes.data);
-      setLocations(locRes.data);
+
+      setInventories(
+        invResult.status === "fulfilled" && Array.isArray(invResult.value?.data)
+          ? invResult.value.data
+          : [],
+      );
+
+      setProducts(
+        prodResult.status === "fulfilled" && Array.isArray(prodResult.value?.data)
+          ? prodResult.value.data
+          : [],
+      );
+
+      setLocations(
+        locResult.status === "fulfilled" && Array.isArray(locResult.value?.data)
+          ? locResult.value.data
+          : [],
+      );
+
+      const failed = [];
+      if (invResult.status === "rejected") failed.push("inventories");
+      if (prodResult.status === "rejected") failed.push("products");
+      if (locResult.status === "rejected") failed.push("storage locations");
+
+      if (failed.length > 0) {
+        setToast({
+          open: true,
+          message: `Failed to load ${failed.join(", ")}`,
+          severity: "warning",
+        });
+      }
     } catch {
       setToast({
         open: true,
@@ -486,6 +534,7 @@ export default function InventoriesPage() {
         open={formOpen}
         inventory={editing}
         products={products}
+        productsLoading={loading}
         locations={locations}
         loading={saving}
         onClose={() => setFormOpen(false)}

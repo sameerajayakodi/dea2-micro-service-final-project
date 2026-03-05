@@ -34,3 +34,21 @@ management:
   endpoint:
     health:
       show-details: always
+
+# -----------------------------------------------------------------------
+# Eureka Client Configuration
+# -----------------------------------------------------------------------
+eureka:
+  client:
+    service-url:
+      # Point to the Eureka Server. Override via env var EUREKA_URI in Azure.
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
+    # Fetch the registry so this service can discover other services
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    # Use IP address instead of hostname – required for correct registration
+    # on cloud platforms (Azure App Service, AKS, Azure VMs) where hostname
+    # resolution across services is not guaranteed.
+    prefer-ip-address: true
+

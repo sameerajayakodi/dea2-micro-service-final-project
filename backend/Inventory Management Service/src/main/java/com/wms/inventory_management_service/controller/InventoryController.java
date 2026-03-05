@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/inventory")
@@ -33,7 +34,7 @@ public class InventoryController {
     }
 
     @GetMapping("/product/{productId}")
-    public ResponseEntity<List<InventoryResponse>> getInventoriesByProductId(@PathVariable Long productId) {
+    public ResponseEntity<List<InventoryResponse>> getInventoriesByProductId(@PathVariable UUID productId) {
         return ResponseEntity.ok(inventoryService.getInventoriesByProductId(productId));
     }
 

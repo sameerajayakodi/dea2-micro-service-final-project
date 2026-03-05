@@ -107,7 +107,7 @@ public class OrderServiceImpl implements OrderService {
 
         log.info("Validating order: {} ({})", order.getOrderNumber(), id);
 
-        AvailabilityResponse availability = inventoryClient.checkAvailability(id);
+        AvailabilityResponse availability = inventoryClient.checkAvailability(order);
 
         if (!availability.canFulfill() && !order.isPartialAllowed()) {
             changeOrderStatus(order, OrderStatus.REJECTED, "Inventory cannot fulfill requested items and partial not allowed");
@@ -134,7 +134,7 @@ public class OrderServiceImpl implements OrderService {
         log.info("Approving order: {} ({}) with type: {}", order.getOrderNumber(), id, request.approvalType());
 
         // Re-check inventory before approving to ensure stock is still available
-        AvailabilityResponse availability = inventoryClient.checkAvailability(id);
+        AvailabilityResponse availability = inventoryClient.checkAvailability(order);
 
         switch (request.approvalType()) {
             case FULL -> handleFullApproval(order, availability);
@@ -145,7 +145,7 @@ public class OrderServiceImpl implements OrderService {
         calculateTotalAmount(order);
         Order saved = orderRepository.save(order);
 
-        reserveApprovedItems(saved);
+        inventoryClient.reserveInventory(saved);
 
         return orderMapper.toResponse(saved);
     }
@@ -349,15 +349,5 @@ public class OrderServiceImpl implements OrderService {
                         AvailabilityResponse.SuggestedApprovedItem::approvedQty));
     }
 
-    private void reserveApprovedItems(Order order) {
-        var reserveItems = order.getItems().stream()
-                .filter(item -> item.getApprovedQty() > 0)
-                .map(item -> new InventoryClient.ReserveItem(item.getItemId(), item.getApprovedQty()))
-                .collect(Collectors.toList());
 
-        if (!reserveItems.isEmpty()) {
-            inventoryClient.reserveInventory(order.getId(), reserveItems);
-            log.info("Inventory reserved for order: {}", order.getOrderNumber());
-        }
-    }
 }

@@ -8,6 +8,7 @@ import BuildIcon from "@mui/icons-material/Build";
 import CategoryIcon from "@mui/icons-material/Category";
 import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 import HandymanIcon from "@mui/icons-material/Handyman";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import {
@@ -39,19 +40,11 @@ const sections = [
   },
   {
     label: "Equipment",
-    description: "Track all equipment items",
+    description: "Track equipment items & manage categories",
     path: "/workforce_service/equipment",
     icon: <BuildIcon />,
     gradient: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
     countKey: "equipment",
-  },
-  {
-    label: "Equipment Types",
-    description: "Manage equipment categories",
-    path: "/workforce_service/equipment-types",
-    icon: <CategoryIcon />,
-    gradient: "linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)",
-    countKey: "types",
   },
   {
     label: "Assignments",
@@ -68,6 +61,14 @@ const sections = [
     icon: <HandymanIcon />,
     gradient: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
     countKey: "maintenance",
+  },
+  {
+    label: "Storage Locations",
+    description: "Assign workers to storage locations",
+    path: "/workforce_service/storage-locations",
+    icon: <LocationOnIcon />,
+    gradient: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)",
+    countKey: "storageLocations",
   },
 ];
 

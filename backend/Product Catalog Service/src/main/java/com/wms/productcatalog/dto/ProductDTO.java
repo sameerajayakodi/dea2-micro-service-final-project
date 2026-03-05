@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 public class ProductDTO {
 
-    private Long id;
+    private UUID id;
 
     @NotBlank(message = "Product name is required")
     private String name;

@@ -3,9 +3,9 @@ spring:
     name: product-catalog-service
 
   datasource:
-    url: jdbc:mysql://localhost:3307/product_catalog_db
+    url: jdbc:mysql://localhost:3306/product_catalog?createDatabaseIfNotExist=true
     username: root
-    password:
+    password: "0000"
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -18,3 +18,22 @@ spring:
 
 server:
   port: 8080
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+  # Add this block to fix the Swagger "Failed to fetch" issue
+  server:
+    url: http://51.20.184.86:8080
+    description: Production EC2 Server
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://131.163.97.60:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    ip-address: 51.20.184.86

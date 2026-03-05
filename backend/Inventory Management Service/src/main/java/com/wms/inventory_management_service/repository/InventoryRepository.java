@@ -7,10 +7,11 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
-    List<Inventory> findByProductProductId(Long productId);
+    List<Inventory> findByProductId(UUID productId);
     List<Inventory> findByStorageLocationLocationId(Long locationId);
     Optional<Inventory> findByBatchNo(String batchNo);
     List<Inventory> findByStockStatus(Inventory.StockStatus stockStatus);
