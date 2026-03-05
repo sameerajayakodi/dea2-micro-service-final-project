@@ -24,7 +24,8 @@ springdoc:
     operationsSorter: method
 
 server:
-  port: ${SERVER_PORT:8083}
+  port: 8083
+  address: 0.0.0.0  # Allows the app to listen on all network interfaces
 
 management:
   endpoints:
@@ -40,15 +41,19 @@ management:
 # -----------------------------------------------------------------------
 eureka:
   client:
-    service-url:
-      # Point to the Eureka Server. Override via env var EUREKA_URI in Azure.
-      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka}
-    # Fetch the registry so this service can discover other services
+    serviceUrl:
+      # This points to your Eureka Server on the other Azure VM
+      defaultZone: http://131.163.97.60:8761/eureka/
     fetch-registry: true
     register-with-eureka: true
   instance:
-    # Use IP address instead of hostname – required for correct registration
-    # on cloud platforms (Azure App Service, AKS, Azure VMs) where hostname
-    # resolution across services is not guaranteed.
+    # Forces Eureka to use the Public IP instead of the internal 172.x.x.x address
     prefer-ip-address: true
-
+    ip-address: 20.41.114.181
+    
+    # Creates a unique ID so Eureka doesn't get confused if you restart the service
+    instance-id: ${spring.application.name}:${random.value}
+    
+    # Optional: Helps Gateway detect if the service goes down faster
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 20
