@@ -17,9 +17,19 @@ import {
     Select,
     InputLabel,
     FormControl,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Tooltip,
 } from "@mui/material";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import api from "@/lib/axios";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import BlockIcon from "@mui/icons-material/Block";
@@ -52,6 +62,8 @@ export default function CustomerDetailView({ params }) {
     const [editing, setEditing] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [customer, setCustomer] = useState(null);
+    const [orders, setOrders] = useState([]);
+    const [loadingOrders, setLoadingOrders] = useState(false);
 
     // Form State
     const [form, setForm] = useState({
@@ -89,6 +101,29 @@ export default function CustomerDetailView({ params }) {
     useEffect(() => {
         fetchCustomer();
     }, [fetchCustomer]);
+
+    const fetchOrders = useCallback(async (cId) => {
+        setLoadingOrders(true);
+        try {
+            const { data } = await api.get("/api/v1/orders?size=1000");
+            if (data && data.content) {
+                const customerOrders = data.content.filter(o => o.customerId === cId);
+                // Sort by createdAt descending
+                customerOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                setOrders(customerOrders);
+            }
+        } catch (err) {
+            console.error("Failed to load orders:", err);
+        } finally {
+            setLoadingOrders(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (customer && customer.customerId) {
+            fetchOrders(customer.customerId);
+        }
+    }, [customer?.customerId, fetchOrders]);
 
     const handleChange = (field, val) => {
         setForm((prev) => ({ ...prev, [field]: val }));
@@ -349,6 +384,76 @@ export default function CustomerDetailView({ params }) {
                         </Box>
                     </Paper>
                 </Box>
+            </Box>
+
+            {/* Orders Section */}
+            <Box sx={{ mt: 4 }}>
+                <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3, borderBottom: "1px solid #f1f5f9", pb: 2 }}>
+                        <ShoppingCartIcon sx={{ color: "#6366f1" }} />
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                            Customer Orders
+                        </Typography>
+                    </Box>
+
+                    {loadingOrders ? (
+                        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                            <CircularProgress size={30} />
+                        </Box>
+                    ) : orders.length === 0 ? (
+                        <Typography variant="body2" sx={{ color: "#94a3b8", fontStyle: "italic", textAlign: "center", py: 2 }}>
+                            No orders found for this customer.
+                        </Typography>
+                    ) : (
+                        <TableContainer sx={{ border: "1px solid #f1f5f9", borderRadius: 2 }}>
+                            <Table size="small">
+                                <TableHead sx={{ bgcolor: "#f8fafc" }}>
+                                    <TableRow>
+                                        <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Order Number</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Status</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Total Amount</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, color: "#475569" }}>Created Date</TableCell>
+                                        <TableCell align="right" sx={{ fontWeight: 600, color: "#475569" }}>Action</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {orders.map((order) => (
+                                        <TableRow key={order.id} hover sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                                            <TableCell sx={{ fontFamily: "monospace", fontWeight: 500 }}>
+                                                {order.orderNumber}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Chip 
+                                                    label={order.status?.replace(/_/g, " ")} 
+                                                    size="small" 
+                                                    sx={{ fontWeight: 600, fontSize: "0.75rem", letterSpacing: "0.5px" }} 
+                                                    color={
+                                                        order.status === "DELIVERED" || order.status === "APPROVED" ? "success" : 
+                                                        order.status === "CANCELLED" || order.status === "REJECTED" ? "error" : 
+                                                        order.status === "CREATED" ? "default" : "primary"
+                                                    }
+                                                />
+                                            </TableCell>
+                                            <TableCell>${order.totalAmount?.toFixed(2) || "0.00"}</TableCell>
+                                            <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
+                                            <TableCell align="right">
+                                                <Tooltip title="View Order Details">
+                                                    <IconButton 
+                                                        size="small" 
+                                                        onClick={() => router.push(`/order_service/${order.id}`)}
+                                                        sx={{ color: "#6366f1", "&:hover": { bgcolor: "#EEF2FF" } }}
+                                                    >
+                                                        <VisibilityIcon fontSize="small" />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    )}
+                </Paper>
             </Box>
 
             <Snackbar anchorOrigin={{ vertical: "bottom", horizontal: "right" }} open={toast.open} autoHideDuration={4000} onClose={() => setToast({ ...toast, open: false })}>
