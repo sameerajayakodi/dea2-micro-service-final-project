@@ -1,6 +1,6 @@
 /**
- * Next.js Route Handler – proxies Eureka's /eureka/apps endpoint so the
- * browser never talks to Eureka directly (avoids CORS issues).
+ * Next.js Route Handler – proxies Eureka's /eureka/apps endpoint through the
+ * API Gateway so the browser never talks to Eureka directly (avoids CORS).
  *
  * GET /api/eureka  →  returns { services: [{ name, instanceCount, status }] }
  */
@@ -8,11 +8,11 @@
 export const dynamic = "force-dynamic"; // never cache
 
 export async function GET() {
-  const eurekaUrl =
-    process.env.NEXT_PUBLIC_EUREKA_URL || "http://131.163.97.60:8761";
+  const gatewayUrl =
+    process.env.NEXT_PUBLIC_API_GATEWAY_URL || "http://131.163.97.60:8222";
 
   try {
-    const res = await fetch(`${eurekaUrl}/eureka/apps`, {
+    const res = await fetch(`${gatewayUrl}/eureka/apps`, {
       headers: { Accept: "application/json" },
       // 5-second timeout so the dashboard doesn't hang
       signal: AbortSignal.timeout(5000),
@@ -20,7 +20,7 @@ export async function GET() {
 
     if (!res.ok) {
       return Response.json(
-        { services: [], error: `Eureka responded with ${res.status}` },
+        { services: [], error: `Gateway responded with ${res.status}` },
         { status: 502 }
       );
     }
@@ -46,7 +46,7 @@ export async function GET() {
   } catch (err) {
     console.error("Eureka proxy error:", err.message);
     return Response.json(
-      { services: [], error: "Could not reach Eureka server" },
+      { services: [], error: "Could not reach API Gateway" },
       { status: 503 }
     );
   }
