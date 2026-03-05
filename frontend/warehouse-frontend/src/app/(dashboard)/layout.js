@@ -2,6 +2,7 @@
 
 import BadgeIcon from "@mui/icons-material/Badge";
 import BusinessIcon from "@mui/icons-material/Business";
+import CategoryIcon from "@mui/icons-material/Category";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import InventoryIcon from "@mui/icons-material/Inventory";
@@ -66,6 +67,11 @@ const navItems = [
     label: "Pick & Pack Service",
     path: "/pick_pack_service",
     icon: <OutboxIcon />,
+  },
+  {
+    label: "Product Service",
+    path: "/product_service",
+    icon: <CategoryIcon />,
   },
   {
     label: "Supplier Service",
