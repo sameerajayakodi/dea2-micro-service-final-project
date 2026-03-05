@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/v1/inbound")
 @RequiredArgsConstructor
@@ -51,5 +51,10 @@ public class InboundController {
     @GetMapping("/receipt-items")
     public List<InboundReceiptItemDTO> getAllReceiptItems() {
         return inboundService.getAllReceiptItems();
+    }
+
+    @GetMapping("/all")
+    public List<InboundResponseDTO> getAllInboundData() {
+        return inboundService.getAllInboundData();
     }
 }

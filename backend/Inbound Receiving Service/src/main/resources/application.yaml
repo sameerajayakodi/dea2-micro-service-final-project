@@ -1,15 +1,17 @@
 server:
   port: 8090
-  address: 0.0.0.0  # Allows the app to listen on all network interfaces for AWS/Azure
+  address: 0.0.0.0
 
 spring:
   application:
     name: inbound-receiving-service
+
   datasource:
-    url: jdbc:postgresql://inbound-service.cl2yyegaa9ek.ap-southeast-1.rds.amazonaws.com/inbound_service
+    url: jdbc:postgresql://inbound-service.cl2yyegaa9ek.ap-southeast-1.rds.amazonaws.com:5432/inbound_service
     driver-class-name: org.postgresql.Driver
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -19,28 +21,22 @@ spring:
         format_sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
-# --- Added Microservice External URLs ---
+# External microservice URLs (used by RestTemplate/WebClient/Feign in your code)
 app:
   supplier-service-url: http://13.61.10.56:8081
   product-service-url: http://51.20.184.86:8080
 
-# --- Eureka Client Configuration ---
 eureka:
   client:
-    serviceUrl:
-      # Points to your Eureka Server
+    service-url:
       defaultZone: http://131.163.97.60:8761/eureka/
     fetch-registry: true
     register-with-eureka: true
+
   instance:
-    # Forces Eureka to use the Public IP instead of internal network
     prefer-ip-address: true
     ip-address: 13.229.61.136
-
-    # Unique ID to prevent conflicts on restart
     instance-id: ${spring.application.name}:${random.value}
-
-    # Fast failure detection for the Gateway
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 20
 
@@ -49,3 +45,10 @@ springdoc:
     path: /swagger-ui.html
   api-docs:
     path: /inbound_service
+
+# Optional (recommended): basic health endpoint for checking service status
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
