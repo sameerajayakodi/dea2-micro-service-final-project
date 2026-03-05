@@ -28,7 +28,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import dayjs from "dayjs";
-import { getAllOrders, createOrder, getProducts } from "@/services/orders/ordersApi";
+import { getAllOrders, createOrder, getProducts, getCustomers } from "@/services/orders/ordersApi";
 
 /* ── Status → Chip color mapping ─────────────────────────────── */
 const STATUS_MAP = {
@@ -61,6 +61,7 @@ export default function OrderServicePage() {
   const [partialAllowed, setPartialAllowed] = useState(false);
   const [items, setItems] = useState([{ itemId: "", quantity: 1, unitPrice: 0 }]);
   const [products, setProducts]             = useState([]);
+  const [customers, setCustomers]           = useState([]);
   const [submitting, setSubmitting]         = useState(false);
 
   // ── Toast state ──
@@ -106,12 +107,17 @@ export default function OrderServicePage() {
   const handleOpenWizard = async () => {
     setWizardOpen(true);
     try {
-      const { data } = await getProducts();
-      const pRows = Array.isArray(data) ? data : Array.isArray(data?.content) ? data.content : [];
+      const [{ data: pData }, { data: cData }] = await Promise.all([
+        getProducts(),
+        getCustomers()
+      ]);
+      const pRows = Array.isArray(pData) ? pData : Array.isArray(pData?.content) ? pData.content : [];
+      const cRows = Array.isArray(cData) ? cData : Array.isArray(cData?.content) ? cData.content : [];
       setProducts(pRows);
+      setCustomers(cRows);
     } catch (err) {
-      console.error("Failed to fetch products:", err);
-      setToast({ open: true, severity: "warning", msg: "Could not load products list" });
+      console.error("Failed to fetch wizard data:", err);
+      setToast({ open: true, severity: "warning", msg: "Could not load products or customers list" });
     }
   };
 
@@ -339,13 +345,41 @@ export default function OrderServicePage() {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3, mt: 1 }}>
             {/* Customer + switch */}
             <Box sx={{ display: "flex", gap: 3, alignItems: "center", flexWrap: "wrap" }}>
-              <TextField
-                label="Customer ID"
-                value={customerId}
-                onChange={(e) => setCustomerId(e.target.value)}
+              <Autocomplete
+                options={customers}
+                getOptionLabel={(c) => {
+                  const nameStr = c.name || (c.firstName ? `${c.firstName} ${c.lastName || ""}` : "");
+                  return nameStr ? `${nameStr} - ${c.email || c.id}` : `Customer ${c.id}`;
+                }}
+                value={customers.find(c => String(c.id) === String(customerId)) || null}
+                onChange={(_, newValue) => setCustomerId(newValue ? newValue.id : "")}
+                isOptionEqualToValue={(option, value) => String(option.id) === String(value.id)}
                 size="small"
-                fullWidth
                 sx={{ flex: 1, minWidth: 200 }}
+                ListboxProps={{ style: { maxHeight: 300, overflow: "auto" } }}
+                renderInput={(params) => <TextField {...params} label="Customer" placeholder="Select Customer" />}
+                noOptionsText={customers.length === 0 ? "Loading or no customers..." : "No match"}
+                renderOption={(props, option, { selected }) => {
+                  const { key, ...otherProps } = props;
+                  const nameStr = option.name || (option.firstName ? `${option.firstName} ${option.lastName || ""}` : "");
+                  return (
+                    <MenuItem key={key} {...otherProps} sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", py: 1, borderBottom: "1px solid #f1f5f9" }}>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%", mb: 0.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: "#1e293b" }}>
+                          {nameStr || `Customer ${option.id}`}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: "#64748b" }}>
+                          {option.phone || ""}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+                        <Typography variant="caption" sx={{ color: "#64748b" }}>
+                          {option.email || option.id}
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                  );
+                }}
               />
               <FormControlLabel
                 control={
