@@ -2,6 +2,7 @@ package com.wms.picking_packing_service.models;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -19,7 +20,7 @@ public class PickingPacking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long pickPackId;
 
-    private Long orderId;
+    private UUID orderId;
     private Long workerId;
     private LocalDateTime pickDate;
     private LocalDateTime packDate;
@@ -36,7 +37,7 @@ public class PickingPacking {
         return pickPackId;
     }
 
-    public Long getOrderId() {
+    public UUID getOrderId() {
         return orderId;
     }
 
@@ -68,7 +69,7 @@ public class PickingPacking {
         this.pickPackId = pickPackId;
     }
 
-    public void setOrderId(Long orderId) {
+    public void setOrderId(UUID orderId) {
         this.orderId = orderId;
     }
 

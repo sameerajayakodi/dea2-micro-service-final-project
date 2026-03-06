@@ -1,6 +1,7 @@
 package com.wms.picking_packing_service.services;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
@@ -49,7 +50,7 @@ public class PickingPackingServiceImpl implements PickingPackingService {
     }
 
     @Override
-    public List<PickingPackingDTO> getByOrderId(String orderId) {
+    public List<PickingPackingDTO> getByOrderId(UUID orderId) {
         return crudService.getByOrderId(orderId);
     }
 

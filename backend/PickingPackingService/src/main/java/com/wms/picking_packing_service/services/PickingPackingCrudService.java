@@ -3,6 +3,7 @@ package com.wms.picking_packing_service.services;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -28,7 +29,6 @@ public class PickingPackingCrudService {
     private static final String STATUS_PACKING = "PACKING";
     private static final String STATUS_COMPLETED = "COMPLETED";
     private static final String STATUS_CANCELLED = "CANCELLED";
-    private static final String ORDER_STATUS_PICKING_APPROVED = "PICKING_APPROVED";
     private static final Set<String> VALID_STATUSES = Set.of(
             STATUS_PENDING,
             STATUS_PICKING,
@@ -66,20 +66,14 @@ public class PickingPackingCrudService {
             throw new BadRequestException("Picking task already exists for order ID: " + dto.getOrderId());
         }
 
-        String upstreamOrderStatus;
         try {
-            upstreamOrderStatus = extractOrderStatus(orderClient.getOrderById(dto.getOrderId()));
+            orderClient.getOrderById(dto.getOrderId());
         } catch (Exception e) {
             throw new BadRequestException("Order not found with ID: " + dto.getOrderId());
         }
 
-        if (!ORDER_STATUS_PICKING_APPROVED.equals(upstreamOrderStatus)) {
-            throw new BadRequestException(
-                    "Order " + dto.getOrderId() + " is not ready for picking. Current status: " + upstreamOrderStatus);
-        }
-
         if (!workerClient.isWorkerAvailable(dto.getWorkerId())) {
-            throw new BadRequestException("Worker is not available with ID: " + dto.getWorkerId());
+            throw new BadRequestException("Worker not found with ID: " + dto.getWorkerId());
         }
 
         PickingPacking entity = new PickingPacking();
@@ -172,7 +166,7 @@ public class PickingPackingCrudService {
         return mapper.toDTO(updated);
     }
 
-    public List<PickingPackingDTO> getByOrderId(String orderId) {
+    public List<PickingPackingDTO> getByOrderId(UUID orderId) {
         return repository.findByOrderId(orderId).stream()
                 .map(mapper::toDTO)
                 .collect(Collectors.toList());
@@ -212,20 +206,4 @@ public class PickingPackingCrudService {
                 .orElseThrow(() -> new ResourceNotFoundException("PickingPacking not found with ID: " + id));
     }
 
-    private String extractOrderStatus(java.util.Map<String, Object> orderPayload) {
-        if (orderPayload == null) {
-            return "UNKNOWN";
-        }
-
-        Object status = orderPayload.get("orderStatus");
-        if (status == null) {
-            status = orderPayload.get("status");
-        }
-
-        if (status == null) {
-            return "UNKNOWN";
-        }
-
-        return String.valueOf(status).trim().toUpperCase();
-    }
 }

@@ -1,12 +1,15 @@
 package com.wms.picking_packing_service.dto;
 
+import java.util.UUID;
+
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 public class PickingItemDTO {
-    @Positive(message = "itemId must be a positive number")
-    private Long itemId;
+    @NotNull(message = "itemId is required")
+    private UUID itemId;
 
     @Positive(message = "quantityToPick must be greater than zero")
     private Integer quantityToPick;
@@ -17,7 +20,7 @@ public class PickingItemDTO {
     @Size(max = 50, message = "binNo must be at most 50 characters")
     private String binNo;
 
-    public void setItemId(Long itemId) {
+    public void setItemId(UUID itemId) {
         this.itemId = itemId;
     }
 
@@ -33,7 +36,7 @@ public class PickingItemDTO {
         this.binNo = binNo;
     }
 
-    public Long getItemId() {
+    public UUID getItemId() {
         return itemId;
     }
 

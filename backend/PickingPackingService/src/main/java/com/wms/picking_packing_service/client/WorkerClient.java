@@ -6,16 +6,16 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "${services.worker.name:CUSTOMER-MANAGEMENT-SERVICE}")
+@FeignClient(name = "${services.worker.name:WORKFORCE-EQUIPMENT-SERVICE}")
 public interface WorkerClient {
 
-    @GetMapping("/api/v1/workers/{workerId}")
+    @GetMapping("/api/v1/workforce-equipment/workers/{workerId}")
     Map<String, Object> getWorkerById(@PathVariable("workerId") Long workerId);
 
     default boolean isWorkerAvailable(Long workerId) {
         try {
             Map<String, Object> worker = getWorkerById(workerId);
-            return worker != null && "AVAILABLE".equals(worker.get("status"));
+            return worker != null;
         } catch (Exception exception) {
             return false;
         }

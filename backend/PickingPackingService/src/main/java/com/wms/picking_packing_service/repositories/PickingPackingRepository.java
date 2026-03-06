@@ -6,16 +6,17 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface PickingPackingRepository
         extends JpaRepository<PickingPacking, Long> {
     
-    List<PickingPacking> findByOrderId(String orderId);
+    List<PickingPacking> findByOrderId(UUID orderId);
     
     List<PickingPacking> findByWorkerId(Long workerId);
     
     List<PickingPacking> findByStatus(String status);
     
-    Optional<PickingPacking> findByOrderIdAndStatus(String orderId, String status);
+    Optional<PickingPacking> findByOrderIdAndStatus(UUID orderId, String status);
 }

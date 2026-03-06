@@ -1,6 +1,7 @@
 package com.wms.picking_packing_service.controller;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,7 +29,7 @@ public class OrderIntegrationController {
     @GetMapping("/{orderId}")
     @Operation(summary = "Get picking tasks by order", 
                description = "🔵 CALLED BY: Order Service → Returns all picking tasks for specific order")
-    public ResponseEntity<List<PickingPackingDTO>> getByOrderId(@PathVariable String orderId) {
+    public ResponseEntity<List<PickingPackingDTO>> getByOrderId(@PathVariable UUID orderId) {
         return ResponseEntity.ok(service.getByOrderId(orderId));
     }
 }

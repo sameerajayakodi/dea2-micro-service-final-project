@@ -3,6 +3,7 @@ package com.wms.picking_packing_service.services;
 import com.wms.picking_packing_service.dto.PickingPackingDTO;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface PickingPackingService {
     PickingPackingDTO createPickingTask(PickingPackingDTO dto);
@@ -17,7 +18,7 @@ public interface PickingPackingService {
 
     void delete(Long id);
     
-    List<PickingPackingDTO> getByOrderId(String orderId);
+    List<PickingPackingDTO> getByOrderId(UUID orderId);
     
     List<PickingPackingDTO> getByWorkerId(Long workerId);
     

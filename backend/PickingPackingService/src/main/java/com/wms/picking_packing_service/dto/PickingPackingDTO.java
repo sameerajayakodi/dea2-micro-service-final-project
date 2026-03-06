@@ -2,13 +2,14 @@ package com.wms.picking_packing_service.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 
 public class PickingPackingDTO {
     private Long pickPackId;
-    private String orderId;
+    private UUID orderId;
     private Long workerId;
 
     private LocalDateTime pickDate;
@@ -27,7 +28,7 @@ public class PickingPackingDTO {
         this.pickPackId = pickPackId;
     }
 
-    public void setOrderId(String orderId) {
+    public void setOrderId(UUID orderId) {
         this.orderId = orderId;
     }
 
@@ -59,7 +60,7 @@ public class PickingPackingDTO {
         return pickPackId;
     }
 
-    public String getOrderId() {
+    public UUID getOrderId() {
         return orderId;
     }
 
