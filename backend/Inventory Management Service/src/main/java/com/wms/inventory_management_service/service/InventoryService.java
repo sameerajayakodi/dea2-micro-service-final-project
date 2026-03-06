@@ -9,13 +9,10 @@ import com.wms.inventory_management_service.dto.response.LowStockAlertResponse;
 import com.wms.inventory_management_service.exception.BadRequestException;
 import com.wms.inventory_management_service.exception.ConflictException;
 import com.wms.inventory_management_service.exception.ResourceNotFoundException;
-import com.wms.inventory_management_service.exception.ServiceException;
 import com.wms.inventory_management_service.model.Inventory;
 import com.wms.inventory_management_service.model.InventoryAdjustment;
-import com.wms.inventory_management_service.model.StorageLocation;
 import com.wms.inventory_management_service.repository.InventoryAdjustmentRepository;
 import com.wms.inventory_management_service.repository.InventoryRepository;
-import com.wms.inventory_management_service.repository.StorageLocationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,9 +26,9 @@ import java.util.stream.Collectors;
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
-    private final StorageLocationRepository storageLocationRepository;
     private final InventoryAdjustmentRepository inventoryAdjustmentRepository;
     private final ProductCatalogClient productCatalogClient;
+    private final StorageLocationClient storageLocationClient;
 
     public List<InventoryResponse> getAllInventories() {
         return inventoryRepository.findAll()
@@ -54,7 +51,7 @@ public class InventoryService {
     }
 
     public List<InventoryResponse> getInventoriesByLocationId(Long locationId) {
-        return inventoryRepository.findByStorageLocationLocationId(locationId)
+        return inventoryRepository.findByLocationId(locationId)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -68,9 +65,7 @@ public class InventoryService {
                 });
 
         productCatalogClient.getProductById(request.getProductId());
-
-        StorageLocation location = storageLocationRepository.findById(request.getLocationId())
-                .orElseThrow(() -> new ResourceNotFoundException("StorageLocation", "locationId", request.getLocationId()));
+        storageLocationClient.getStorageLocationById(request.getLocationId());
 
         Inventory inventory = new Inventory();
         inventory.setBatchNo(request.getBatchNo());
@@ -80,7 +75,7 @@ public class InventoryService {
         inventory.setExpiryDate(request.getExpiryDate());
         inventory.setLowStockThreshold(request.getLowStockThreshold());
         inventory.setProductId(request.getProductId());
-        inventory.setStorageLocation(location);
+        inventory.setLocationId(request.getLocationId());
 
         Inventory saved = inventoryRepository.save(inventory);
         return mapToResponse(saved);
@@ -99,9 +94,7 @@ public class InventoryService {
                 });
 
         productCatalogClient.getProductById(request.getProductId());
-
-        StorageLocation location = storageLocationRepository.findById(request.getLocationId())
-                .orElseThrow(() -> new ResourceNotFoundException("StorageLocation", "locationId", request.getLocationId()));
+        storageLocationClient.getStorageLocationById(request.getLocationId());
 
         inventory.setBatchNo(request.getBatchNo());
         inventory.setQuantityAvailable(request.getQuantityAvailable());
@@ -110,7 +103,7 @@ public class InventoryService {
         inventory.setExpiryDate(request.getExpiryDate());
         inventory.setLowStockThreshold(request.getLowStockThreshold());
         inventory.setProductId(request.getProductId());
-        inventory.setStorageLocation(location);
+        inventory.setLocationId(request.getLocationId());
 
         Inventory saved = inventoryRepository.save(inventory);
         return mapToResponse(saved);
@@ -300,6 +293,7 @@ public class InventoryService {
         boolean isLowStock = inventory.getLowStockThreshold() != null &&
                 totalAvailable <= inventory.getLowStockThreshold();
         String productName = resolveProductName(inventory.getProductId());
+        StorageLocationClient.StorageLocationDetails locationDetails = resolveLocationDetails(inventory.getLocationId());
 
         return new InventoryResponse(
                 inventory.getInventoryId(),
@@ -314,12 +308,22 @@ public class InventoryService {
                 isLowStock,
                 inventory.getProductId(),
                 productName,
-                inventory.getStorageLocation().getLocationId(),
-                inventory.getStorageLocation().getZone(),
-                inventory.getStorageLocation().getRackNo(),
-                inventory.getStorageLocation().getBinNo(),
+                inventory.getLocationId(),
+                locationDetails != null ? locationDetails.zone() : null,
+                locationDetails != null ? locationDetails.rackNo() : null,
+                locationDetails != null ? locationDetails.binNo() : null,
                 inventory.getLastUpdated()
         );
+    }
+
+    private StorageLocationClient.StorageLocationDetails resolveLocationDetails(Long locationId) {
+        try {
+            return storageLocationClient.getStorageLocationById(locationId);
+        } catch (ResourceNotFoundException ex) {
+            return null;
+        } catch (Exception ex) {
+            return null;
+        }
     }
 
     private InventoryAdjustmentResponse mapAdjustmentToResponse(InventoryAdjustment adjustment) {
