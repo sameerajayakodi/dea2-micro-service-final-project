@@ -28,6 +28,7 @@ public class PickingPackingCrudService {
     private static final String STATUS_PACKING = "PACKING";
     private static final String STATUS_COMPLETED = "COMPLETED";
     private static final String STATUS_CANCELLED = "CANCELLED";
+    private static final String ORDER_STATUS_PICKING_APPROVED = "PICKING_APPROVED";
     private static final Set<String> VALID_STATUSES = Set.of(
             STATUS_PENDING,
             STATUS_PICKING,
@@ -61,10 +62,20 @@ public class PickingPackingCrudService {
             throw new BadRequestException("Worker ID is required");
         }
 
+        if (!repository.findByOrderId(dto.getOrderId()).isEmpty()) {
+            throw new BadRequestException("Picking task already exists for order ID: " + dto.getOrderId());
+        }
+
+        String upstreamOrderStatus;
         try {
-            orderClient.getOrderById(dto.getOrderId());
+            upstreamOrderStatus = extractOrderStatus(orderClient.getOrderById(dto.getOrderId()));
         } catch (Exception e) {
             throw new BadRequestException("Order not found with ID: " + dto.getOrderId());
+        }
+
+        if (!ORDER_STATUS_PICKING_APPROVED.equals(upstreamOrderStatus)) {
+            throw new BadRequestException(
+                    "Order " + dto.getOrderId() + " is not ready for picking. Current status: " + upstreamOrderStatus);
         }
 
         if (!workerClient.isWorkerAvailable(dto.getWorkerId())) {
@@ -81,6 +92,13 @@ public class PickingPackingCrudService {
         mapper.mapItemsForCreate(entity, dto.getItems());
 
         PickingPacking saved = repository.save(entity);
+
+        try {
+            orderClient.updateOrderStatus(saved.getOrderId(), STATUS_PICKING);
+        } catch (Exception exception) {
+            log.warn("Failed to update order status to PICKING for orderId={}: {}", saved.getOrderId(), exception.getMessage());
+        }
+
         return mapper.toDTO(saved);
     }
 
@@ -192,5 +210,22 @@ public class PickingPackingCrudService {
     public PickingPacking getEntityById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("PickingPacking not found with ID: " + id));
+    }
+
+    private String extractOrderStatus(java.util.Map<String, Object> orderPayload) {
+        if (orderPayload == null) {
+            return "UNKNOWN";
+        }
+
+        Object status = orderPayload.get("orderStatus");
+        if (status == null) {
+            status = orderPayload.get("status");
+        }
+
+        if (status == null) {
+            return "UNKNOWN";
+        }
+
+        return String.valueOf(status).trim().toUpperCase();
     }
 }

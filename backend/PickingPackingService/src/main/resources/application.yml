@@ -24,15 +24,13 @@ app:
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:*}
 
-order:
-  service:
-    url: ${ORDER_SERVICE_URL:http://localhost:8080}
-inventory:
-  service:
-    url: ${INVENTORY_SERVICE_URL:http://localhost:8081}
-worker:
-  service:
-    url: ${WORKER_SERVICE_URL:http://localhost:8083}
+services:
+  order:
+    name: ${ORDER_SERVICE_NAME:ORDER-SERVICE}
+  inventory:
+    name: ${INVENTORY_SERVICE_NAME:PRODUCT-CATALOG-SERVICE}
+  worker:
+    name: ${WORKER_SERVICE_NAME:CUSTOMER-MANAGEMENT-SERVICE}
 
 logging:
   level:
