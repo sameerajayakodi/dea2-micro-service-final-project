@@ -1,7 +1,9 @@
-package com.wms.inventory_management_service.service;
+package com.wms.inventory_management_service.service.client.impl;
 
 import com.wms.inventory_management_service.exception.ResourceNotFoundException;
 import com.wms.inventory_management_service.exception.ServiceException;
+import com.wms.inventory_management_service.service.client.StorageLocationClient;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -13,12 +15,13 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class StorageLocationClient {
+public class StorageLocationClientImpl implements StorageLocationClient {
 
-    private static final String STORAGE_LOCATION_BASE_URL = "http://Storage-Location-Service/api/locations";
+    private static final String STORAGE_LOCATION_BASE_URL = "http://storage-location-service/api/locations";
 
     private final RestClient.Builder restClientBuilder;
 
+    @Override
     public StorageLocationDetails getStorageLocationById(Long locationId) {
         try {
             return restClientBuilder.build()
@@ -33,6 +36,7 @@ public class StorageLocationClient {
         }
     }
 
+    @Override
     public List<StorageLocationDetails> getAllStorageLocations() {
         try {
             StorageLocationDetails[] response = restClientBuilder.build()
@@ -46,6 +50,7 @@ public class StorageLocationClient {
         }
     }
 
+    @Override
     public StorageLocationDetails createStorageLocation(StorageLocationPayload payload) {
         try {
             return restClientBuilder.build()
@@ -59,6 +64,7 @@ public class StorageLocationClient {
         }
     }
 
+    @Override
     public StorageLocationDetails updateStorageLocation(Long locationId, StorageLocationPayload payload) {
         try {
             return restClientBuilder.build()
@@ -74,6 +80,7 @@ public class StorageLocationClient {
         }
     }
 
+    @Override
     public void deleteStorageLocation(Long locationId) {
         try {
             restClientBuilder.build()
@@ -86,27 +93,5 @@ public class StorageLocationClient {
         } catch (RestClientException ex) {
             throw new ServiceException("Unable to delete storage location", ex);
         }
-    }
-
-    public record StorageLocationDetails(
-            Long locationId,
-            String zone,
-            String rackNo,
-            String binNo,
-            BigDecimal maxWeight,
-            BigDecimal maxVolume,
-            BigDecimal currentWeight,
-            BigDecimal currentVolume,
-            String availabilityStatus
-    ) {
-    }
-
-    public record StorageLocationPayload(
-            String zone,
-            String rackNo,
-            String binNo,
-            BigDecimal maxWeight,
-            BigDecimal maxVolume
-    ) {
     }
 }

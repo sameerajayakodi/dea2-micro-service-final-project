@@ -1,7 +1,9 @@
-package com.wms.inventory_management_service.service;
+package com.wms.inventory_management_service.service.client.impl;
 
 import com.wms.inventory_management_service.exception.ResourceNotFoundException;
 import com.wms.inventory_management_service.exception.ServiceException;
+import com.wms.inventory_management_service.service.client.ProductCatalogClient;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -13,16 +15,16 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class ProductCatalogClient {
+public class ProductCatalogClientImpl implements ProductCatalogClient {
 
     private static final String PRODUCT_CATALOG_BASE_URL = "http://product-catalog-service/api/products";
 
     private final RestClient.Builder restClientBuilder;
 
-    // internal auth token used by API Gateway and internal services when calling Product Catalog
     @Value("${internal.auth.token:S3CR3T}")
     private String internalAuthToken;
 
+    @Override
     public ProductCatalogProduct getProductById(UUID productId) {
         try {
             return restClientBuilder.build()
@@ -36,8 +38,5 @@ public class ProductCatalogClient {
         } catch (RestClientException ex) {
             throw new ServiceException("Unable to fetch product details from Product Catalog Service", ex);
         }
-    }
-
-    public record ProductCatalogProduct(UUID id, String name, Boolean active) {
     }
 }
