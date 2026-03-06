@@ -13,29 +13,19 @@ import {
   DialogActions,
   IconButton,
   Paper,
-  Tab,
-  Tabs,
   TextField,
   Typography,
   Snackbar,
   Alert,
-  MenuItem,
-  Autocomplete,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import BusinessIcon from "@mui/icons-material/Business";
-import ShoppingCartCheckoutIcon from "@mui/icons-material/ShoppingCartCheckout";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import EditIcon from "@mui/icons-material/Edit";
-import dayjs from "dayjs";
 import {
   getAllSuppliers,
   createSupplier,
   updateSupplierStatus,
-  getAllPurchaseOrders,
-  createPurchaseOrder,
 } from "@/services/supplier_service/supplierApi";
 
 /* ── Supplier Status → Chip color ─────────────────────────── */
@@ -44,24 +34,9 @@ const SUPPLIER_STATUS_MAP = {
   INACTIVE: { color: "default", label: "Inactive" },
 };
 
-/* ── PO Status → Chip color ───────────────────────────────── */
-const PO_STATUS_MAP = {
-  DRAFT: { color: "default", label: "Draft" },
-  SUBMITTED: { color: "info", label: "Submitted" },
-  APPROVED: { color: "warning", label: "Approved" },
-  SENT: { color: "primary", label: "Sent" },
-  RECEIVED: { color: "success", label: "Received" },
-  CANCELLED: { color: "error", label: "Cancelled" },
-};
-
 const getSupplierChip = (status) => {
   const s = (status ?? "").toUpperCase();
   return SUPPLIER_STATUS_MAP[s] ?? { color: "default", label: status ?? "Unknown" };
-};
-
-const getPOChip = (status) => {
-  const s = (status ?? "").toUpperCase();
-  return PO_STATUS_MAP[s] ?? { color: "default", label: status ?? "Unknown" };
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -69,15 +44,10 @@ const getPOChip = (status) => {
    ═══════════════════════════════════════════════════════════════ */
 export default function SupplierServicePage() {
   const router = useRouter();
-  const [tab, setTab] = useState(0);
 
   // ── Supplier state ──
   const [suppliers, setSuppliers] = useState([]);
   const [supplierLoading, setSupplierLoading] = useState(true);
-
-  // ── PO state ──
-  const [purchaseOrders, setPurchaseOrders] = useState([]);
-  const [poLoading, setPOLoading] = useState(true);
 
   // ── Create Supplier dialog ──
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
@@ -89,15 +59,6 @@ export default function SupplierServicePage() {
     address: "",
   });
   const [supplierSubmitting, setSupplierSubmitting] = useState(false);
-
-  // ── Create PO dialog ──
-  const [poDialogOpen, setPODialogOpen] = useState(false);
-  const [poForm, setPOForm] = useState({
-    supplierId: "",
-    expectedDeliveryDate: "",
-  });
-  const [poItems, setPOItems] = useState([{ productId: "", quantity: 1, unitPrice: 0 }]);
-  const [poSubmitting, setPOSubmitting] = useState(false);
 
   // ── Toast ──
   const [toast, setToast] = useState({ open: false, severity: "success", msg: "" });
@@ -118,24 +79,9 @@ export default function SupplierServicePage() {
     }
   }, []);
 
-  const fetchPurchaseOrders = useCallback(async () => {
-    setPOLoading(true);
-    try {
-      const { data } = await getAllPurchaseOrders();
-      const rows = Array.isArray(data) ? data : Array.isArray(data?.content) ? data.content : [];
-      setPurchaseOrders(rows);
-    } catch (err) {
-      console.error("Failed to fetch purchase orders:", err);
-      showToast("error", "Failed to load purchase orders");
-    } finally {
-      setPOLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     fetchSuppliers();
-    fetchPurchaseOrders();
-  }, [fetchSuppliers, fetchPurchaseOrders]);
+  }, [fetchSuppliers]);
 
   /* ── Supplier form helpers ─────────────────────────────── */
   const handleSupplierFieldChange = (field, value) => {
@@ -168,58 +114,6 @@ export default function SupplierServicePage() {
   const resetSupplierDialog = () => {
     setSupplierDialogOpen(false);
     setSupplierForm({ name: "", contactPerson: "", email: "", phone: "", address: "" });
-  };
-
-  /* ── PO form helpers ───────────────────────────────────── */
-  const handlePOItemChange = (idx, field, value) => {
-    setPOItems((prev) => {
-      const copy = [...prev];
-      copy[idx] = { ...copy[idx], [field]: value };
-      return copy;
-    });
-  };
-
-  const handleAddPOItem = () => setPOItems((prev) => [...prev, { productId: "", quantity: 1, unitPrice: 0 }]);
-  const handleRemovePOItem = (idx) => setPOItems((prev) => prev.filter((_, i) => i !== idx));
-
-  const handleCreatePO = async () => {
-    if (!poForm.supplierId.trim()) {
-      showToast("warning", "Supplier is required");
-      return;
-    }
-    const validItems = poItems
-      .filter((i) => i.productId && Number(i.quantity) > 0)
-      .map((i) => ({ productId: i.productId, quantity: Number(i.quantity), unitPrice: Number(i.unitPrice) }));
-
-    if (validItems.length === 0) {
-      showToast("warning", "Add at least one valid item");
-      return;
-    }
-
-    setPOSubmitting(true);
-    try {
-      await createPurchaseOrder({
-        supplierId: poForm.supplierId,
-        expectedDeliveryDate: poForm.expectedDeliveryDate
-          ? new Date(poForm.expectedDeliveryDate).toISOString()
-          : undefined,
-        items: validItems,
-      });
-      showToast("success", "Purchase order created!");
-      resetPODialog();
-      fetchPurchaseOrders();
-    } catch (err) {
-      console.error("Create PO failed:", err);
-      showToast("error", "Failed to create purchase order");
-    } finally {
-      setPOSubmitting(false);
-    }
-  };
-
-  const resetPODialog = () => {
-    setPODialogOpen(false);
-    setPOForm({ supplierId: "", expectedDeliveryDate: "" });
-    setPOItems([{ productId: "", quantity: 1, unitPrice: 0 }]);
   };
 
   /* ── Toggle supplier status ────────────────────────────── */
@@ -296,95 +190,6 @@ export default function SupplierServicePage() {
     },
   ];
 
-  /* ── PO DataGrid columns ───────────────────────────────── */
-  const poColumns = [
-    {
-      field: "poNumber",
-      headerName: "PO #",
-      flex: 0.8,
-      minWidth: 160,
-      renderCell: (params) => (
-        <Typography
-          variant="body2"
-          onClick={() => router.push(`/supplier_service/purchase-orders/${params.row.id}`)}
-          sx={{
-            cursor: "pointer",
-            color: "#6366f1",
-            fontFamily: "monospace",
-            fontWeight: 600,
-            "&:hover": { textDecoration: "underline", color: "#4f46e5" },
-          }}
-        >
-          {params.value || String(params.row.id).substring(0, 12)}
-        </Typography>
-      ),
-    },
-    {
-      field: "supplierId",
-      headerName: "Supplier ID",
-      flex: 0.7,
-      minWidth: 140,
-      valueGetter: (value) => value ? String(value).substring(0, 12) + "…" : "—",
-    },
-    {
-      field: "expectedDeliveryDate",
-      headerName: "Expected Delivery",
-      flex: 0.8,
-      minWidth: 160,
-      valueGetter: (value) => (value ? dayjs(value).format("YYYY-MM-DD") : "—"),
-    },
-    {
-      field: "totalAmount",
-      headerName: "Total ($)",
-      flex: 0.5,
-      minWidth: 110,
-      type: "number",
-      align: "right",
-      headerAlign: "right",
-      valueFormatter: (value) => `$${Number(value ?? 0).toFixed(2)}`,
-    },
-    {
-      field: "status",
-      headerName: "Status",
-      flex: 0.6,
-      minWidth: 130,
-      renderCell: (params) => {
-        const { color, label } = getPOChip(params.value);
-        return (
-          <Chip
-            label={label}
-            color={color}
-            size="small"
-            sx={{ fontWeight: 600, letterSpacing: "0.3px" }}
-          />
-        );
-      },
-    },
-    {
-      field: "createdAt",
-      headerName: "Created",
-      flex: 0.7,
-      minWidth: 150,
-      valueGetter: (value) => (value ? dayjs(value).format("YYYY-MM-DD HH:mm") : "—"),
-    },
-    {
-      field: "actions",
-      headerName: "",
-      width: 60,
-      sortable: false,
-      filterable: false,
-      renderCell: (params) => (
-        <IconButton
-          size="small"
-          onClick={() => router.push(`/supplier_service/purchase-orders/${params.row.id}`)}
-          sx={{ color: "#94a3b8", "&:hover": { color: "#6366f1" } }}
-        >
-          <VisibilityIcon fontSize="small" />
-        </IconButton>
-      ),
-    },
-  ];
-
   /* ─── RENDER ──────────────────────────────────────────── */
   return (
     <Box>
@@ -411,7 +216,7 @@ export default function SupplierServicePage() {
             <Button
               variant="outlined"
               startIcon={<RefreshIcon />}
-              onClick={() => { fetchSuppliers(); fetchPurchaseOrders(); }}
+              onClick={fetchSuppliers}
               sx={{
                 borderColor: "divider",
                 color: "#64748b",
@@ -421,64 +226,29 @@ export default function SupplierServicePage() {
             >
               Refresh
             </Button>
-            {tab === 0 ? (
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setSupplierDialogOpen(true)}
-                sx={{
-                  bgcolor: "#6366f1",
-                  color: "#fff",
-                  fontWeight: 600,
-                  textTransform: "none",
-                  borderRadius: 2,
-                  px: 3,
-                  boxShadow: "0 4px 14px rgba(99,102,241,0.3)",
-                  "&:hover": { bgcolor: "#4f46e5" },
-                }}
-              >
-                New Supplier
-              </Button>
-            ) : (
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setPODialogOpen(true)}
-                sx={{
-                  bgcolor: "#6366f1",
-                  color: "#fff",
-                  fontWeight: 600,
-                  textTransform: "none",
-                  borderRadius: 2,
-                  px: 3,
-                  boxShadow: "0 4px 14px rgba(99,102,241,0.3)",
-                  "&:hover": { bgcolor: "#4f46e5" },
-                }}
-              >
-                New Purchase Order
-              </Button>
-            )}
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setSupplierDialogOpen(true)}
+              sx={{
+                bgcolor: "#6366f1",
+                color: "#fff",
+                fontWeight: 600,
+                textTransform: "none",
+                borderRadius: 2,
+                px: 3,
+                boxShadow: "0 4px 14px rgba(99,102,241,0.3)",
+                "&:hover": { bgcolor: "#4f46e5" },
+              }}
+            >
+              New Supplier
+            </Button>
           </Box>
         </Box>
         <Typography variant="body1" sx={{ color: "#64748b", maxWidth: 600 }}>
-          Manage supplier relationships, track purchase orders, and handle procurement operations.
+          Manage supplier relationships, track supplier performance, and handle procurement operations.
         </Typography>
       </Box>
-
-      {/* ── Tabs ── */}
-      <Tabs
-        value={tab}
-        onChange={(_, v) => setTab(v)}
-        sx={{
-          mb: 3,
-          "& .MuiTabs-indicator": { bgcolor: "#6366f1" },
-          "& .MuiTab-root": { textTransform: "none", fontWeight: 600 },
-          "& .Mui-selected": { color: "#6366f1" },
-        }}
-      >
-        <Tab icon={<BusinessIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Suppliers" />
-        <Tab icon={<ShoppingCartCheckoutIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Purchase Orders" />
-      </Tabs>
 
       {/* ── DataGrid ── */}
       <Paper
@@ -498,32 +268,17 @@ export default function SupplierServicePage() {
           "& .MuiDataGrid-footerContainer": { borderTop: "1px solid #f1f5f9" },
         }}
       >
-        {tab === 0 ? (
-          <DataGrid
-            rows={suppliers}
-            columns={supplierColumns}
-            loading={supplierLoading}
-            getRowId={(row) => row.id}
-            pageSizeOptions={[10, 25, 50]}
-            initialState={{
-              pagination: { paginationModel: { pageSize: 10 } },
-            }}
-            disableRowSelectionOnClick
-          />
-        ) : (
-          <DataGrid
-            rows={purchaseOrders}
-            columns={poColumns}
-            loading={poLoading}
-            getRowId={(row) => row.id}
-            pageSizeOptions={[10, 25, 50]}
-            initialState={{
-              pagination: { paginationModel: { pageSize: 10 } },
-              sorting: { sortModel: [{ field: "createdAt", sort: "desc" }] },
-            }}
-            disableRowSelectionOnClick
-          />
-        )}
+        <DataGrid
+          rows={suppliers}
+          columns={supplierColumns}
+          loading={supplierLoading}
+          getRowId={(row) => row.id}
+          pageSizeOptions={[10, 25, 50]}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 10 } },
+          }}
+          disableRowSelectionOnClick
+        />
       </Paper>
 
       {/* ══════════════════════════════════════════════════════
@@ -609,132 +364,6 @@ export default function SupplierServicePage() {
         </DialogActions>
       </Dialog>
 
-      {/* ══════════════════════════════════════════════════════
-          CREATE PURCHASE ORDER DIALOG
-          ══════════════════════════════════════════════════════ */}
-      <Dialog
-        open={poDialogOpen}
-        onClose={resetPODialog}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
-      >
-        <DialogTitle sx={{ borderBottom: "1px solid", borderColor: "divider", pb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#1e293b" }}>
-            Create Purchase Order
-          </Typography>
-        </DialogTitle>
-
-        <DialogContent sx={{ pt: 3 }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3, mt: 1 }}>
-            <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
-              <Autocomplete
-                options={suppliers}
-                getOptionLabel={(s) => s.name ? `${s.name} (${s.contactPerson || "N/A"})` : `Supplier ${s.id}`}
-                value={suppliers.find((s) => String(s.id) === String(poForm.supplierId)) || null}
-                onChange={(_, newValue) => setPOForm((prev) => ({ ...prev, supplierId: newValue ? newValue.id : "" }))}
-                isOptionEqualToValue={(option, value) => String(option.id) === String(value.id)}
-                size="small"
-                sx={{ flex: 2, minWidth: 250 }}
-                renderInput={(params) => <TextField {...params} label="Supplier" required />}
-                noOptionsText={suppliers.length === 0 ? "Loading or no suppliers…" : "No match"}
-                renderOption={(props, option) => {
-                  const { key, ...otherProps } = props;
-                  return (
-                    <MenuItem key={key} {...otherProps} sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", py: 1, borderBottom: "1px solid #f1f5f9" }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: "#1e293b" }}>
-                        {option.name}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: "#64748b" }}>
-                        {option.contactPerson || "—"} · {option.email || "—"}
-                      </Typography>
-                    </MenuItem>
-                  );
-                }}
-              />
-              <TextField
-                label="Expected Delivery Date"
-                type="date"
-                value={poForm.expectedDeliveryDate}
-                onChange={(e) => setPOForm((prev) => ({ ...prev, expectedDeliveryDate: e.target.value }))}
-                size="small"
-                sx={{ flex: 1, minWidth: 180 }}
-                slotProps={{ inputLabel: { shrink: true } }}
-              />
-            </Box>
-
-            {/* Section divider */}
-            <SectionDivider text="Order Items" />
-
-            {/* Item rows */}
-            {poItems.map((item, idx) => (
-              <Box key={idx} sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-                <TextField
-                  label="Product ID"
-                  value={item.productId}
-                  onChange={(e) => handlePOItemChange(idx, "productId", e.target.value)}
-                  size="small"
-                  sx={{ flex: 2, minWidth: 200 }}
-                />
-                <TextField
-                  label="Qty"
-                  type="number"
-                  value={item.quantity}
-                  onChange={(e) => handlePOItemChange(idx, "quantity", e.target.value)}
-                  size="small"
-                  sx={{ width: 100 }}
-                  inputProps={{ min: 1 }}
-                />
-                <TextField
-                  label="Unit Price"
-                  type="number"
-                  value={item.unitPrice}
-                  onChange={(e) => handlePOItemChange(idx, "unitPrice", e.target.value)}
-                  size="small"
-                  sx={{ width: 120 }}
-                  inputProps={{ min: 0, step: 0.01 }}
-                />
-                <IconButton
-                  onClick={() => handleRemovePOItem(idx)}
-                  disabled={poItems.length === 1}
-                  sx={{ color: "#ef4444", "&.Mui-disabled": { color: "#cbd5e1" } }}
-                >
-                  <DeleteOutlineIcon />
-                </IconButton>
-              </Box>
-            ))}
-
-            <Button
-              startIcon={<AddIcon />}
-              onClick={handleAddPOItem}
-              variant="text"
-              sx={{ color: "#6366f1", width: "fit-content", textTransform: "none" }}
-            >
-              Add Another Item
-            </Button>
-          </Box>
-        </DialogContent>
-
-        <DialogActions sx={{ p: 2.5, borderTop: "1px solid", borderColor: "divider" }}>
-          <Button onClick={resetPODialog} sx={{ color: "#64748b", textTransform: "none" }}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCreatePO}
-            variant="contained"
-            disabled={poSubmitting}
-            sx={{
-              bgcolor: "#6366f1",
-              fontWeight: 600,
-              textTransform: "none",
-              "&:hover": { bgcolor: "#4f46e5" },
-            }}
-          >
-            {poSubmitting ? "Creating…" : "Create Purchase Order"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
       {/* ── Toast ── */}
       <Snackbar
         open={toast.open}
@@ -751,22 +380,6 @@ export default function SupplierServicePage() {
           {toast.msg}
         </Alert>
       </Snackbar>
-    </Box>
-  );
-}
-
-/* ── Tiny helper component ─────────────────────────────────── */
-function SectionDivider({ text }) {
-  return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-      <Box sx={{ height: 1, flex: 1, bgcolor: "#e2e8f0" }} />
-      <Typography
-        variant="caption"
-        sx={{ color: "#94a3b8", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}
-      >
-        {text}
-      </Typography>
-      <Box sx={{ height: 1, flex: 1, bgcolor: "#e2e8f0" }} />
     </Box>
   );
 }
