@@ -182,7 +182,7 @@ export default function WorkerStorageLocationsPage() {
     <Box>
       <PageHeader
         title="Worker Storage Locations"
-        subtitle="Assign workers to storage locations from the Inventory service."
+        subtitle="Assign workers to storage locations from the Storage Location service."
         icon={<LocationOnIcon sx={{ fontSize: 32 }} />}
         backHref="/workforce_service"
         count={assignments.length}

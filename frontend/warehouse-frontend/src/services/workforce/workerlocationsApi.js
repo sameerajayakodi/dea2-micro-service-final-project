@@ -1,6 +1,6 @@
 import api from "@/lib/axios";
 
-const BASE = "/api/inventory/storage-locations";
+const BASE = "/api/locations";
 
 export const getWorkerAllStorageLocations = () => api.get(BASE);
 
