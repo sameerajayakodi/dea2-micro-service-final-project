@@ -12,7 +12,7 @@ import java.util.UUID;
 @Repository
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     List<Inventory> findByProductId(UUID productId);
-    List<Inventory> findByStorageLocationLocationId(Long locationId);
+    List<Inventory> findByLocationId(Long locationId);
     Optional<Inventory> findByBatchNo(String batchNo);
     List<Inventory> findByStockStatus(Inventory.StockStatus stockStatus);
     List<Inventory> findByExpiryDateBefore(LocalDate date);

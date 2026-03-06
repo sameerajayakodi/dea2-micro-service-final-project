@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import {
   Autocomplete,
   Box,
+  Typography,
   Button,
   Chip,
   CircularProgress,
@@ -153,12 +154,13 @@ function InventoryFormDialog({
                 loading={productsLoading}
                 value={selectedProduct}
                 isOptionEqualToValue={(option, value) =>
-                  String(option.productId) === String(value.productId)
+                  String(option.productId) === String(value?.productId)
                 }
                 getOptionLabel={(option) => option.productName || ""}
                 onChange={(_, value) =>
                   setForm({ ...form, productId: value ? String(value.productId) : "" })
                 }
+                ListboxProps={{ style: { maxHeight: 300, overflow: "auto" } }}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -177,6 +179,29 @@ function InventoryFormDialog({
                     }}
                   />
                 )}
+                noOptionsText={products.length === 0 ? "Loading products..." : "No match"}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props;
+                  return (
+                    <MenuItem key={key} {...otherProps} sx={{ py: 1, borderBottom: "1px solid #f1f5f9" }}>
+                      <Box sx={{ display: "flex", flexDirection: "column", width: "100%" }}>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: "#1e293b" }}>
+                            {option.productName || `Product ${option.productId}`}
+                          </Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 700, color: "#6366f1" }}>
+                            ${Number(option.unitPrice || 0).toFixed(2)}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 0.5 }}>
+                          <Typography variant="caption" sx={{ color: "#64748b" }}>
+                            SKU: {option.skuCode || "N/A"}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </MenuItem>
+                  );
+                }}
               />
             </Grid>
 

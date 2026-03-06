@@ -1,6 +1,15 @@
 package com.wms.inventory_management_service.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -49,9 +58,8 @@ public class Inventory {
     @Column(name = "product_id", nullable = false, columnDefinition = "uuid")
     private UUID productId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "location_id", nullable = false)
-    private StorageLocation storageLocation;
+    @Column(name = "location_id", nullable = false)
+    private Long locationId;
 
     @PrePersist
     protected void onCreate() {

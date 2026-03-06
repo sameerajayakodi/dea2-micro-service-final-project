@@ -6,7 +6,9 @@ import { Box, Typography, Paper, CircularProgress } from "@mui/material";
 import { getShipmentById } from "@/services/inbound_service/inboundApi";
 
 export default function ShipmentDetails() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params?.id;
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -16,7 +18,10 @@ export default function ShipmentDetails() {
     setLoading(true);
     getShipmentById(id)
       .then((res) => setData(res.data))
-      .catch((err) => console.error(err))
+      .catch((err) => {
+        console.error(err);
+        setData(null);
+      })
       .finally(() => setLoading(false));
   }, [id]);
 

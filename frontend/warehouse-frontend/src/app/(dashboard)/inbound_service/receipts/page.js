@@ -29,7 +29,10 @@ export default function ReceiptsPage() {
         Warehouse Receipts (GRN)
       </Typography>
 
-      <Paper elevation={0} sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
+      <Paper
+        elevation={0}
+        sx={{ borderRadius: 3, border: "1px solid", borderColor: "divider" }}
+      >
         <TableContainer>
           <Table>
             <TableHead sx={{ bgcolor: "#f8fafc" }}>
@@ -50,8 +53,15 @@ export default function ReceiptsPage() {
                   <TableCell>{r.status}</TableCell>
                 </TableRow>
               ))}
-            </TableBody>
 
+              {receipts.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} align="center">
+                    No receipts found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
           </Table>
         </TableContainer>
       </Paper>

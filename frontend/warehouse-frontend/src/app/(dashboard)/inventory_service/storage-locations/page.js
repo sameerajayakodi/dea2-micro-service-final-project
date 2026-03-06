@@ -38,6 +38,8 @@ const initialForm = {
   zone: "",
   rackNo: "",
   binNo: "",
+  maxWeight: "",
+  maxVolume: "",
 };
 
 function LocationFormDialog({ open, location, loading, onClose, onSubmit }) {
@@ -47,6 +49,8 @@ function LocationFormDialog({ open, location, loading, onClose, onSubmit }) {
         zone: location.zone || "",
         rackNo: location.rackNo || "",
         binNo: location.binNo || "",
+        maxWeight: String(location.maxWeight ?? ""),
+        maxVolume: String(location.maxVolume ?? ""),
       };
     }
     return initialForm;
@@ -62,6 +66,12 @@ function LocationFormDialog({ open, location, loading, onClose, onSubmit }) {
     if (!form.zone.trim()) nextErrors.zone = "Zone is required";
     if (!form.rackNo.trim()) nextErrors.rackNo = "Rack number is required";
     if (!form.binNo.trim()) nextErrors.binNo = "Bin number is required";
+    if (!form.maxWeight || Number(form.maxWeight) <= 0) {
+      nextErrors.maxWeight = "Max weight must be greater than 0";
+    }
+    if (!form.maxVolume || Number(form.maxVolume) <= 0) {
+      nextErrors.maxVolume = "Max volume must be greater than 0";
+    }
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -74,6 +84,8 @@ function LocationFormDialog({ open, location, loading, onClose, onSubmit }) {
       zone: form.zone.trim(),
       rackNo: form.rackNo.trim(),
       binNo: form.binNo.trim(),
+      maxWeight: Number(form.maxWeight),
+      maxVolume: Number(form.maxVolume),
     });
   };
 
@@ -113,6 +125,28 @@ function LocationFormDialog({ open, location, loading, onClose, onSubmit }) {
                 onChange={(e) => setForm({ ...form, binNo: e.target.value })}
                 error={!!errors.binNo}
                 helperText={errors.binNo}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Max Weight"
+                value={form.maxWeight}
+                onChange={(e) => setForm({ ...form, maxWeight: e.target.value })}
+                error={!!errors.maxWeight}
+                helperText={errors.maxWeight}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Max Volume"
+                value={form.maxVolume}
+                onChange={(e) => setForm({ ...form, maxVolume: e.target.value })}
+                error={!!errors.maxVolume}
+                helperText={errors.maxVolume}
               />
             </Grid>
           </Grid>
@@ -232,6 +266,8 @@ export default function StorageLocationsPage() {
     { id: "zone", label: "Zone", sortable: true },
     { id: "rackNo", label: "Rack", sortable: true },
     { id: "binNo", label: "Bin", sortable: true },
+    { id: "maxWeight", label: "Max Weight", sortable: true },
+    { id: "maxVolume", label: "Max Volume", sortable: true },
     {
       id: "fullLocation",
       label: "Location",
@@ -299,7 +335,7 @@ export default function StorageLocationsPage() {
       <DataTable
         columns={columns}
         rows={locations}
-        searchKeys={["zone", "rackNo", "binNo"]}
+        searchKeys={["zone", "rackNo", "binNo", "maxWeight", "maxVolume"]}
         emptyComponent={
           <EmptyState icon={<PlaceIcon />} message="No storage locations found." />
         }

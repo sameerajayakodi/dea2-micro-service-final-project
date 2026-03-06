@@ -1,39 +1,20 @@
-import axios from "axios";
 import api from "@/lib/axios";
 
-// ✅ Direct call to inbound service running on EC2:8090
-const inboundDirect = axios.create({
-  baseURL: "http://13.229.61.136:8090",
-  headers: { "Content-Type": "application/json" },
-});
+// ── Inbound Shipments ─────────────────────────────────
+const BASE = "/api/v1/inbound";
 
-/**
- * INBOUND SERVICE (DIRECT)
- */
-export const getInboundShipments = () =>
-  inboundDirect.get("/api/v1/inbound/shipments");
-
-export const getAllReceipts = () =>
-  inboundDirect.get("/api/v1/inbound/receipts");
-
-export const getAllReceiptItems = () =>
-  inboundDirect.get("/api/v1/inbound/receipt-items");
-
-export const getShipmentById = (id) =>
-  inboundDirect.get(`/api/v1/inbound/${id}`);
-
-export const receiveGoods = (data) =>
-  inboundDirect.post("/api/v1/inbound/receive", data);
-
+export const getInboundShipments = () => api.get(`${BASE}/shipments`);
+export const getShipmentById = (id) => api.get(`${BASE}/${id}`);
+export const receiveGoods = (data) => api.post(`${BASE}/receive`, data);
 export const updateShipmentStatus = (id, status) =>
-  inboundDirect.patch(`/api/v1/inbound/${id}/status`, null, { params: { status } });
+  api.patch(`${BASE}/${id}/status`, null, { params: { status } });
+export const deleteShipment = (id) => api.delete(`${BASE}/${id}`);
 
-export const deleteShipment = (id) =>
-  inboundDirect.delete(`/api/v1/inbound/${id}`);
+// ── Receipts (GRNs) ──────────────────────────────────
+export const getAllReceipts = () => api.get(`${BASE}/receipts`);
+export const getAllReceiptItems = () => api.get(`${BASE}/receipt-items`);
 
-/**
- * SUPPLIER + PRODUCT (keep through your normal gateway api)
- */
+// ── Supplier + Product (through the gateway) ─────────
 export const getAvailableSuppliers = async () => {
   const res = await api.get("/api/v1/suppliers");
   return res.data?.suppliers || [];

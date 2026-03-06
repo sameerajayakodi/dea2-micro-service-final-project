@@ -79,6 +79,11 @@ const navItems = [
     icon: <BusinessIcon />,
   },
   {
+    label: "Storage Service",
+    path: "/storage_service",
+    icon: <WarehouseIcon />,
+  },
+  {
     label: "Workforce Service",
     path: "/workforce_service",
     icon: <BadgeIcon />,

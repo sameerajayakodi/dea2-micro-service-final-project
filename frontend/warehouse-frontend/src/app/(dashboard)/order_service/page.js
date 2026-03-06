@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { DataGrid } from "@mui/x-data-grid";
 import {
@@ -27,8 +27,27 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import dayjs from "dayjs";
+import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip } from "recharts";
 import { getAllOrders, createOrder, getProducts, getCustomers } from "@/services/orders/ordersApi";
+
+/* ── Chart color palette ─────────────────────────────────────── */
+const STATUS_COLORS = {
+  CREATED:           "#6366f1",
+  VALIDATED:         "#f59e0b",
+  APPROVED:          "#10b981",
+  REJECTED:          "#ef4444",
+  CANCELLED:         "#94a3b8",
+  PICKING_REQUESTED: "#8b5cf6",
+  PACKED:            "#3b82f6",
+  DISPATCHED:        "#f97316",
+  DELIVERED:         "#059669",
+};
 
 /* ── Status → Chip color mapping ─────────────────────────────── */
 const STATUS_MAP = {
@@ -38,6 +57,9 @@ const STATUS_MAP = {
   REJECTED:          { color: "error",     label: "Rejected" },
   CANCELLED:         { color: "default",   label: "Cancelled" },
   PICKING_REQUESTED: { color: "secondary", label: "Picking Requested" },
+  PACKED:            { color: "info",      label: "Packed" },
+  DISPATCHED:        { color: "warning",   label: "Dispatched" },
+  DELIVERED:         { color: "success",   label: "Delivered" },
 };
 
 const getStatusChipProps = (status) => {
@@ -100,6 +122,41 @@ export default function OrderServicePage() {
   }, []);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
+
+  /* ── Dashboard computed stats ──────────────────────────────── */
+  const stats = useMemo(() => {
+    const totalOrders = orders.length;
+    const totalRevenue = orders.reduce((sum, o) => sum + Number(o.totalAmount ?? 0), 0);
+    const delivered = orders.filter((o) => (o.status ?? "").toUpperCase() === "DELIVERED").length;
+    const inProgress = orders.filter((o) =>
+      ["CREATED", "VALIDATED", "APPROVED", "PICKING_REQUESTED", "PACKED", "DISPATCHED"].includes((o.status ?? "").toUpperCase())
+    ).length;
+    return { totalOrders, totalRevenue, delivered, inProgress };
+  }, [orders]);
+
+  const statusChartData = useMemo(() => {
+    const counts = {};
+    orders.forEach((o) => {
+      const s = (o.status ?? "UNKNOWN").toUpperCase();
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, value]) => ({
+      name: STATUS_MAP[name]?.label || name,
+      value,
+      color: STATUS_COLORS[name] || "#94a3b8",
+    }));
+  }, [orders]);
+
+  const dailyChartData = useMemo(() => {
+    const map = {};
+    orders.forEach((o) => {
+      const day = dayjs(o.createdAt).format("MMM DD");
+      if (!map[day]) map[day] = { date: day, orders: 0, revenue: 0 };
+      map[day].orders += 1;
+      map[day].revenue += Number(o.totalAmount ?? 0);
+    });
+    return Object.values(map).sort((a, b) => dayjs(a.date, "MMM DD").diff(dayjs(b.date, "MMM DD")));
+  }, [orders]);
 
   // ── Item helpers ──
   const handleAddItem    = () => setItems(prev => [...prev, { itemId: "", quantity: 1, unitPrice: 0 }]);
@@ -330,11 +387,183 @@ export default function OrderServicePage() {
         </Typography>
       </Box>
 
+      {/* ══════════════════════════════════════════════════════
+          QUICK STAT CARDS
+          ══════════════════════════════════════════════════════ */}
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" }, gap: 2.5, mb: 3 }}>
+        {[
+          {
+            label: "Total Orders",
+            value: stats.totalOrders,
+            icon: <ShoppingCartIcon />,
+            color: "#6366f1",
+            bg: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)",
+          },
+          {
+            label: "Total Revenue",
+            value: `$${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            icon: <AttachMoneyIcon />,
+            color: "#10b981",
+            bg: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)",
+          },
+          {
+            label: "Delivered",
+            value: stats.delivered,
+            icon: <CheckCircleIcon />,
+            color: "#059669",
+            bg: "linear-gradient(135deg, #ecfdf5 0%, #a7f3d0 100%)",
+          },
+          {
+            label: "In Progress",
+            value: stats.inProgress,
+            icon: <PendingActionsIcon />,
+            color: "#f59e0b",
+            bg: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+          },
+        ].map((card) => (
+          <Paper
+            key={card.label}
+            elevation={0}
+            sx={{
+              p: 2.5,
+              borderRadius: 3,
+              border: "1px solid",
+              borderColor: "divider",
+              background: card.bg,
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              transition: "transform 0.2s, box-shadow 0.2s",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow: `0 8px 24px ${card.color}18`,
+              },
+            }}
+          >
+            <Box
+              sx={{
+                width: 48,
+                height: 48,
+                borderRadius: 2.5,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: `${card.color}18`,
+                color: card.color,
+                "& svg": { fontSize: 26 },
+              }}
+            >
+              {card.icon}
+            </Box>
+            <Box>
+              <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, display: "block", mb: 0.3 }}>
+                {card.label}
+              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 800, color: "#1e293b", lineHeight: 1.2 }}>
+                {card.value}
+              </Typography>
+            </Box>
+          </Paper>
+        ))}
+      </Box>
+
+      {/* ══════════════════════════════════════════════════════
+          CHARTS ROW
+          ══════════════════════════════════════════════════════ */}
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1.8fr" }, gap: 2.5, mb: 3 }}>
+        {/* ── Donut: Order Status Distribution ── */}
+        <Paper
+          elevation={0}
+          sx={{ p: 3, borderRadius: 3, border: "1px solid", borderColor: "divider" }}
+        >
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1e293b", mb: 2 }}>
+            Status Distribution
+          </Typography>
+          {statusChartData.length > 0 ? (
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={statusChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={3}
+                    dataKey="value"
+                    strokeWidth={0}
+                  >
+                    {statusChartData.map((entry, idx) => (
+                      <Cell key={idx} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <ReTooltip
+                    contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
+                    formatter={(value, name) => [`${value} orders`, name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              {/* Legend */}
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, mt: 1, justifyContent: "center" }}>
+                {statusChartData.map((entry) => (
+                  <Box key={entry.name} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: entry.color }} />
+                    <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>
+                      {entry.name} ({entry.value})
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          ) : (
+            <Typography variant="body2" sx={{ color: "#94a3b8", textAlign: "center", py: 4 }}>No data</Typography>
+          )}
+        </Paper>
+
+        {/* ── Area: Orders Over Time ── */}
+        <Paper
+          elevation={0}
+          sx={{ p: 3, borderRadius: 3, border: "1px solid", borderColor: "divider" }}
+        >
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1e293b", mb: 2 }}>
+            Orders Over Time
+          </Typography>
+          {dailyChartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={240}>
+              <AreaChart data={dailyChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="orderGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="date" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="left" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                <ReTooltip
+                  contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}
+                  formatter={(value, name) => [name === "revenue" ? `$${Number(value).toFixed(2)}` : value, name === "revenue" ? "Revenue" : "Orders"]}
+                />
+                <Area yAxisId="left" type="monotone" dataKey="orders" stroke="#6366f1" strokeWidth={2.5} fill="url(#orderGrad)" dot={{ r: 4, fill: "#6366f1" }} activeDot={{ r: 6 }} />
+                <Area yAxisId="right" type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} fill="url(#revGrad)" dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <Typography variant="body2" sx={{ color: "#94a3b8", textAlign: "center", py: 4 }}>No data</Typography>
+          )}
+        </Paper>
+      </Box>
+
       {/* ── DataGrid ── */}
       <Paper
         elevation={0}
         sx={{
-          height: 560,
+          height: 620,
           width: "100%",
           borderRadius: 3,
           border: "1px solid",
@@ -342,10 +571,13 @@ export default function OrderServicePage() {
           overflow: "hidden",
           "& .MuiDataGrid-root":            { border: "none" },
           "& .MuiDataGrid-columnHeaders":   { bgcolor: "#f8fafc", color: "#64748b", fontWeight: 600 },
+          "& .MuiDataGrid-columnHeaderTitle": { fontWeight: 700, fontSize: "0.85rem", letterSpacing: "0.3px" },
+          "& .MuiDataGrid-columnHeader":    { px: 2.5, py: 1.5 },
           "& .MuiDataGrid-columnSeparator": { color: "#e2e8f0" },
-          "& .MuiDataGrid-cell":            { borderColor: "#f1f5f9" },
-          "& .MuiDataGrid-row:hover":       { bgcolor: "#f8fafc" },
-          "& .MuiDataGrid-footerContainer": { borderTop: "1px solid #f1f5f9" },
+          "& .MuiDataGrid-cell":            { borderColor: "#f1f5f9", px: 2.5, py: 1.5, display: "flex", alignItems: "center" },
+          "& .MuiDataGrid-row":             { "&:hover": { bgcolor: "#f8fafc" } },
+          "& .MuiDataGrid-footerContainer": { borderTop: "1px solid #f1f5f9", px: 2, py: 0.5 },
+          "& .MuiDataGrid-overlay":         { bgcolor: "rgba(255,255,255,0.8)" },
         }}
       >
         <DataGrid
@@ -353,6 +585,8 @@ export default function OrderServicePage() {
           columns={columns}
           loading={loading}
           getRowId={(row) => row.id}
+          rowHeight={60}
+          columnHeaderHeight={52}
           pageSizeOptions={[10, 25, 50]}
           initialState={{
             pagination: { paginationModel: { pageSize: 10 } },
