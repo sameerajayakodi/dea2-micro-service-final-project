@@ -117,35 +117,42 @@ public class PickingPackingMapper {
     }
 
     public void replacePackingDetails(PickingPacking entity, List<PackingDetailsDTO> packingDTOs) {
-        if (packingDTOs == null) {
-            return;
+    if (packingDTOs == null) {
+        return;
+    }
+
+    List<PackingDetails> existingPackingDetails = entity.getPackingDetails();
+
+    if (existingPackingDetails == null || existingPackingDetails.isEmpty()) {
+
+        List<PackingDetails> newDetails = packingDTOs.stream()
+                .map(dto -> {
+                    PackingDetails details = new PackingDetails();
+                    details.setPackingType(dto.getPackingType());
+                    details.setWeight(dto.getWeight());
+                    details.setDimensions(dto.getDimensions());
+                    details.setPickingPacking(entity);
+                    return details;
+                })
+                .collect(Collectors.toList());
+
+        entity.setPackingDetails(newDetails);
+        return;
+    }
+
+    for (int i = 0; i < packingDTOs.size(); i++) {
+        PackingDetailsDTO dto = packingDTOs.get(i);
+        PackingDetails existing = existingPackingDetails.get(i);
+
+        if (dto.getPackingType() != null) {
+            existing.setPackingType(dto.getPackingType());
         }
-
-        List<PackingDetails> existingPackingDetails = entity.getPackingDetails();
-        if (existingPackingDetails == null || existingPackingDetails.isEmpty()) {
-            if (!packingDTOs.isEmpty()) {
-                throw new BadRequestException("Update cannot create new packing details.");
-            }
-            return;
+        if (dto.getWeight() != null) {
+            existing.setWeight(dto.getWeight());
         }
-
-        if (packingDTOs.size() > existingPackingDetails.size()) {
-            throw new BadRequestException("Update cannot create new packing details.");
-        }
-
-        for (int index = 0; index < packingDTOs.size(); index++) {
-            PackingDetailsDTO packingDTO = packingDTOs.get(index);
-            PackingDetails existingDetails = existingPackingDetails.get(index);
-
-            if (packingDTO.getPackingType() != null) {
-                existingDetails.setPackingType(packingDTO.getPackingType());
-            }
-            if (packingDTO.getWeight() != null) {
-                existingDetails.setWeight(packingDTO.getWeight());
-            }
-            if (packingDTO.getDimensions() != null) {
-                existingDetails.setDimensions(packingDTO.getDimensions());
-            }
+        if (dto.getDimensions() != null) {
+            existing.setDimensions(dto.getDimensions());
         }
     }
+}
 }
