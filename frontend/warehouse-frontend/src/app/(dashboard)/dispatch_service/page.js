@@ -2,89 +2,136 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { DataGrid, GridActionsCellItem } from "@mui/x-data-grid";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
+import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import {
+  Avatar,
   Box,
   Button,
   Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Grid,
   IconButton,
   Paper,
-  TextField,
+  Tooltip,
   Typography,
-  Snackbar,
-  Alert,
-  MenuItem,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import dayjs from "dayjs";
 
+import PageHeader from "@/components/workforce/PageHeader";
+import DataTable from "@/components/workforce/DataTable";
+import DispatchFormDialog from "@/components/dispatch/DispatchFormDialog";
+import {
+  LoadingState,
+  EmptyState,
+  ConfirmDialog,
+  Toast,
+} from "@/components/workforce/shared";
 import {
   getAllDispatches,
   createDispatch,
+  updateDispatch,
   deleteDispatch,
-} from "@/services/dispatches/dispatchesApi";
+} from "@/services/dispatch";
 
-/* ── Status → Chip color mapping ─────────────────────────────── */
-const STATUS_MAP = {
-  PENDING: { color: "warning", label: "Pending" },
-  IN_TRANSIT: { color: "info", label: "In Transit" },
-  DELIVERED: { color: "success", label: "Delivered" },
-  CANCELLED: { color: "default", label: "Cancelled" },
+/* ---------- Status chip helpers ---------- */
+const statusConfig = {
+  PENDING: {
+    label: "Pending",
+    bgcolor: "#fef3c7",
+    color: "#92400e",
+    icon: <PendingActionsIcon sx={{ fontSize: 16 }} />,
+  },
+  IN_TRANSIT: {
+    label: "In Transit",
+    bgcolor: "#dbeafe",
+    color: "#1e40af",
+    icon: <LocalShippingOutlinedIcon sx={{ fontSize: 16 }} />,
+  },
+  DELIVERED: {
+    label: "Delivered",
+    bgcolor: "#dcfce7",
+    color: "#166534",
+    icon: <CheckCircleOutlineIcon sx={{ fontSize: 16 }} />,
+  },
+  DELAYED: {
+    label: "Delayed",
+    bgcolor: "#fee2e2",
+    color: "#991b1b",
+    icon: <WarningAmberIcon sx={{ fontSize: 16 }} />,
+  },
 };
 
-const getStatusChipProps = (status) => {
-  const upper = (status ?? "").toUpperCase();
-  return STATUS_MAP[upper] ?? { color: "default", label: status ?? "Unknown" };
+const StatusChip = ({ status }) => {
+  const cfg = statusConfig[status] || {
+    label: status,
+    bgcolor: "#f1f5f9",
+    color: "#475569",
+  };
+  return (
+    <Chip
+      icon={cfg.icon}
+      label={cfg.label}
+      size="small"
+      sx={{
+        bgcolor: cfg.bgcolor,
+        color: cfg.color,
+        fontWeight: 600,
+        "& .MuiChip-icon": { color: cfg.color },
+      }}
+    />
+  );
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   PAGE COMPONENT
-   ═══════════════════════════════════════════════════════════════ */
+/* ---------- Truncate long UUID for display ---------- */
+const shortId = (id) => (id ? `${id.slice(0, 8)}…` : "—");
+
+/* ---------- Format datetime ---------- */
+const fmtDate = (dt) => {
+  if (!dt) return "—";
+  const d = new Date(dt);
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 export default function DispatchServicePage() {
   const router = useRouter();
-
-  // ── Table state ──
   const [dispatches, setDispatches] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // ── Create-wizard state ──
-  const [wizardOpen, setWizardOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    orderId: "",
-    vehicleId: "",
-    driverId: "",
-    status: "PENDING",
-    routeDetails: "",
-    deliveryNotes: "",
-  });
-  const [submitting, setSubmitting] = useState(false);
-
-  // ── Delete confirmation state ──
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [dispatchToDelete, setDispatchToDelete] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
-  // ── Toast state ──
-  const [toast, setToast] = useState({ open: false, severity: "success", msg: "" });
-
-  // ── Fetch dispatches ──
+  /* ---- Fetch data ---- */
   const fetchDispatches = useCallback(async () => {
-    setLoading(true);
     try {
-      const { data } = await getAllDispatches();
-      const rows = Array.isArray(data) ? data : Array.isArray(data?.content) ? data.content : [];
-      setDispatches(rows);
-    } catch (err) {
-      console.error("Failed to fetch dispatches:", err);
-      setToast({ open: true, severity: "error", msg: "Failed to load dispatches" });
+      setLoading(true);
+      const res = await getAllDispatches();
+      setDispatches(res.data);
+    } catch {
+      setToast({
+        open: true,
+        message: "Failed to load dispatches",
+        severity: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -94,377 +141,338 @@ export default function DispatchServicePage() {
     fetchDispatches();
   }, [fetchDispatches]);
 
-  // ── Handle Form Changes ──
-  const handleInputChange = (field) => (e) => {
-    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+  /* ---- Handlers ---- */
+  const handleCreate = () => {
+    setEditing(null);
+    setFormOpen(true);
   };
 
-  // ── Submit dispatch ──
-  const handleCreateDispatch = async () => {
-    if (!formData.orderId.trim() || !formData.vehicleId.trim() || !formData.driverId.trim()) {
-      setToast({ open: true, severity: "warning", msg: "Order ID, Vehicle ID, and Driver ID are required" });
-      return;
-    }
+  const handleEdit = (row) => {
+    setEditing(row);
+    setFormOpen(true);
+  };
 
-    setSubmitting(true);
+  const handleFormSubmit = async (data) => {
     try {
-      await createDispatch(formData);
-      setToast({ open: true, severity: "success", msg: "Dispatch created successfully!" });
-      resetWizard();
+      setSaving(true);
+      if (editing) {
+        await updateDispatch(editing.id, data);
+        setToast({
+          open: true,
+          message: "Dispatch updated successfully",
+          severity: "success",
+        });
+      } else {
+        await createDispatch(data);
+        setToast({
+          open: true,
+          message: "Dispatch created successfully",
+          severity: "success",
+        });
+      }
+      setFormOpen(false);
       fetchDispatches();
     } catch (err) {
-      console.error("Create dispatch failed:", err);
-      setToast({ open: true, severity: "error", msg: "Failed to create dispatch" });
+      const msg = err.response?.data?.message || "Operation failed";
+      setToast({ open: true, message: msg, severity: "error" });
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
-  const resetWizard = () => {
-    setWizardOpen(false);
-    setFormData({
-      orderId: "",
-      vehicleId: "",
-      driverId: "",
-      status: "PENDING",
-      routeDetails: "",
-      deliveryNotes: "",
-    });
-  };
-
-  // ── Delete dispatch ──
-  const confirmDelete = (id) => {
-    setDispatchToDelete(id);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteDispatch = async () => {
-    if (!dispatchToDelete) return;
-    setDeleting(true);
+  const handleDelete = async () => {
     try {
-      await deleteDispatch(dispatchToDelete);
-      setToast({ open: true, severity: "success", msg: "Dispatch deleted successfully!" });
-      setDeleteDialogOpen(false);
-      setDispatchToDelete(null);
+      setDeleting(true);
+      await deleteDispatch(deleteTarget.id);
+      setToast({
+        open: true,
+        message: "Dispatch deleted",
+        severity: "success",
+      });
+      setDeleteTarget(null);
       fetchDispatches();
     } catch (err) {
-      console.error("Delete dispatch failed:", err);
-      setToast({ open: true, severity: "error", msg: "Failed to delete dispatch" });
+      const msg = err.response?.data?.message || "Delete failed";
+      setToast({ open: true, message: msg, severity: "error" });
     } finally {
       setDeleting(false);
     }
   };
 
-  // ── DataGrid columns ──
-  const columns = [
-    {
-      field: "id",
-      headerName: "Dispatch ID",
-      flex: 1,
-      minWidth: 150,
-      renderCell: (params) => (
-        <Typography
-          variant="body2"
-          onClick={() => router.push(`/dispatch_service/${params.row.id}`)}
-          sx={{
-            cursor: "pointer",
-            color: "#6366f1",
-            fontFamily: "monospace",
-            fontWeight: 600,
-            "&:hover": { textDecoration: "underline", color: "#4f46e5" },
-          }}
-        >
-          {String(params.row.id).substring(0, 12)}...
-        </Typography>
-      ),
+  /* ---- Stats ---- */
+  const statusCounts = dispatches.reduce(
+    (acc, d) => {
+      acc[d.status] = (acc[d.status] || 0) + 1;
+      return acc;
     },
-    { field: "orderId", headerName: "Order ID", flex: 1, minWidth: 150 },
-    { field: "vehicleId", headerName: "Vehicle ID", flex: 0.8, minWidth: 120 },
-    { field: "driverId", headerName: "Driver ID", flex: 0.8, minWidth: 120 },
+    { PENDING: 0, IN_TRANSIT: 0, DELIVERED: 0, DELAYED: 0 },
+  );
+
+  const statsCards = [
     {
-      field: "status",
-      headerName: "Status",
-      flex: 0.7,
-      minWidth: 120,
-      renderCell: (params) => {
-        const { color, label } = getStatusChipProps(params.value);
-        return (
-          <Chip
-            label={label}
-            color={color}
-            size="small"
-            sx={{ fontWeight: 600, letterSpacing: "0.3px" }}
-          />
-        );
-      },
+      label: "Total Dispatches",
+      value: dispatches.length,
+      color: "#6366f1",
+      icon: <LocalShippingIcon />,
     },
     {
-      field: "actions",
-      headerName: "Actions",
-      type: "actions",
-      width: 100,
-      getActions: (params) => [
-        <GridActionsCellItem
-          key="view"
-          icon={<VisibilityIcon sx={{ color: "#94a3b8", "&:hover": { color: "#6366f1" } }} />}
-          label="View"
-          onClick={() => router.push(`/dispatch_service/${params.row.id}`)}
-        />,
-        <GridActionsCellItem
-          key="delete"
-          icon={<DeleteOutlineIcon sx={{ color: "#ef4444", "&:hover": { color: "#b91c1c" } }} />}
-          label="Delete"
-          onClick={() => confirmDelete(params.row.id)}
-        />,
-      ],
+      label: "Pending",
+      value: statusCounts.PENDING,
+      color: "#f59e0b",
+      icon: <PendingActionsIcon />,
+    },
+    {
+      label: "In Transit",
+      value: statusCounts.IN_TRANSIT,
+      color: "#3b82f6",
+      icon: <LocalShippingOutlinedIcon />,
+    },
+    {
+      label: "Delivered",
+      value: statusCounts.DELIVERED,
+      color: "#22c55e",
+      icon: <CheckCircleOutlineIcon />,
+    },
+    {
+      label: "Delayed",
+      value: statusCounts.DELAYED,
+      color: "#ef4444",
+      icon: <WarningAmberIcon />,
     },
   ];
 
-  /* ─── RENDER ──────────────────────────────────────────────── */
+  /* ---- Table columns ---- */
+  const columns = [
+    {
+      id: "id",
+      label: "ID",
+      sortable: true,
+      render: (row) => (
+        <Tooltip title={row.id}>
+          <Typography
+            variant="body2"
+            sx={{ fontFamily: "monospace", fontSize: "0.8rem" }}
+          >
+            {shortId(row.id)}
+          </Typography>
+        </Tooltip>
+      ),
+    },
+    {
+      id: "orderId",
+      label: "Order ID",
+      sortable: true,
+      render: (row) => (
+        <Tooltip title={row.orderId}>
+          <Typography
+            variant="body2"
+            sx={{ fontFamily: "monospace", fontSize: "0.8rem" }}
+          >
+            {shortId(row.orderId)}
+          </Typography>
+        </Tooltip>
+      ),
+    },
+    {
+      id: "vehicleId",
+      label: "Vehicle",
+      sortable: true,
+      render: (row) => (
+        <Tooltip title={row.vehicleId || "Not assigned"}>
+          <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
+            {shortId(row.vehicleId)}
+          </Typography>
+        </Tooltip>
+      ),
+    },
+    {
+      id: "driverId",
+      label: "Driver",
+      sortable: true,
+      render: (row) => (
+        <Tooltip title={row.driverId || "Not assigned"}>
+          <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
+            {shortId(row.driverId)}
+          </Typography>
+        </Tooltip>
+      ),
+    },
+    {
+      id: "status",
+      label: "Status",
+      sortable: true,
+      render: (row) => <StatusChip status={row.status} />,
+    },
+    {
+      id: "createdAt",
+      label: "Created",
+      sortable: true,
+      render: (row) => (
+        <Typography variant="body2" sx={{ color: "#64748b", fontSize: "0.8rem" }}>
+          {fmtDate(row.createdAt)}
+        </Typography>
+      ),
+    },
+    {
+      id: "actions",
+      label: "Actions",
+      sortable: false,
+      align: "right",
+      render: (row) => (
+        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 0.5 }}>
+          <Tooltip title="View Details">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/dispatch_service/${row.id}`);
+              }}
+              sx={{ color: "#6366f1" }}
+            >
+              <VisibilityIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Edit">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit(row);
+              }}
+              sx={{ color: "#f59e0b" }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Delete">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteTarget(row);
+              }}
+              sx={{ color: "#ef4444" }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      ),
+    },
+  ];
+
+  if (loading) return <LoadingState message="Loading dispatches..." />;
+
   return (
     <Box>
-      {/* ── Header ── */}
-      <Box sx={{ mb: 4 }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            flexWrap: "wrap",
-            gap: 2,
-            mb: 1,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <LocalShippingIcon sx={{ fontSize: 32, color: "#6366f1" }} />
-            <Typography variant="h4" sx={{ fontWeight: 700, color: "#1e293b" }}>
-              Dispatch Service
-            </Typography>
-          </Box>
+      {/* Header */}
+      <PageHeader
+        title="Dispatch & Transportation"
+        subtitle="Manage dispatch operations, track shipments, and oversee outbound deliveries from the warehouse."
+        icon={<LocalShippingIcon sx={{ fontSize: 32 }} />}
+        count={dispatches.length}
+        action={
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreate}
+            sx={{ bgcolor: "#6366f1", "&:hover": { bgcolor: "#4f46e5" } }}
+          >
+            New Dispatch
+          </Button>
+        }
+      />
 
-          <Box sx={{ display: "flex", gap: 1.5 }}>
-            <Button
-              variant="outlined"
-              startIcon={<RefreshIcon />}
-              onClick={fetchDispatches}
+      {/* Stats cards */}
+      <Grid container spacing={2.5} sx={{ mb: 4 }}>
+        {statsCards.map((stat) => (
+          <Grid size={{ xs: 6, sm: 4, md: 2.4 }} key={stat.label}>
+            <Paper
+              elevation={0}
               sx={{
+                p: 2.5,
+                borderRadius: 3,
+                border: "1px solid",
                 borderColor: "divider",
-                color: "#64748b",
-                textTransform: "none",
-                "&:hover": { borderColor: "#6366f1", color: "#6366f1" },
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                transition: "all 0.25s ease",
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  boxShadow:
+                    "0 10px 15px -3px rgba(0,0,0,0.06), 0 4px 6px -4px rgba(0,0,0,0.04)",
+                },
               }}
             >
-              Refresh
-            </Button>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setWizardOpen(true)}
-              sx={{
-                bgcolor: "#6366f1",
-                color: "#fff",
-                fontWeight: 600,
-                textTransform: "none",
-                borderRadius: 2,
-                px: 3,
-                boxShadow: "0 4px 14px rgba(99,102,241,0.3)",
-                "&:hover": { bgcolor: "#4f46e5" },
-              }}
-            >
-              New Dispatch
-            </Button>
-          </Box>
-        </Box>
-        <Typography variant="body1" sx={{ color: "#64748b", maxWidth: 600 }}>
-          Oversee dispatch operations, track shipments, and manage outbound deliveries from the warehouse.
-        </Typography>
-      </Box>
+              <Box>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "#94a3b8", fontWeight: 500, mb: 0.5, fontSize: "0.75rem" }}
+                >
+                  {stat.label}
+                </Typography>
+                <Typography
+                  variant="h4"
+                  sx={{ fontWeight: 700, color: stat.color }}
+                >
+                  {stat.value}
+                </Typography>
+              </Box>
+              <Avatar
+                sx={{
+                  bgcolor: `${stat.color}15`,
+                  width: 44,
+                  height: 44,
+                }}
+              >
+                <Box sx={{ color: stat.color, display: "flex" }}>{stat.icon}</Box>
+              </Avatar>
+            </Paper>
+          </Grid>
+        ))}
+      </Grid>
 
-      {/* ── DataGrid ── */}
-      <Paper
-        elevation={0}
-        sx={{
-          height: 600,
-          width: "100%",
-          borderRadius: 3,
-          border: "1px solid",
-          borderColor: "divider",
-          overflow: "hidden",
-          "& .MuiDataGrid-root": { border: "none" },
-          "& .MuiDataGrid-columnHeaders": { bgcolor: "#f8fafc", color: "#64748b", fontWeight: 600 },
-          "& .MuiDataGrid-columnSeparator": { color: "#e2e8f0" },
-          "& .MuiDataGrid-cell": { borderColor: "#f1f5f9" },
-          "& .MuiDataGrid-row:hover": { bgcolor: "#f8fafc" },
-          "& .MuiDataGrid-footerContainer": { borderTop: "1px solid #f1f5f9" },
-        }}
-      >
-        <DataGrid
-          rows={dispatches}
-          columns={columns}
-          loading={loading}
-          getRowId={(row) => row.id}
-          pageSizeOptions={[10, 25, 50]}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 10 } },
-          }}
-          disableRowSelectionOnClick
-        />
-      </Paper>
+      {/* Data table */}
+      <DataTable
+        columns={columns}
+        rows={dispatches}
+        searchKeys={["orderId", "vehicleId", "driverId", "status", "routeDetails"]}
+        onRowClick={(row) => router.push(`/dispatch_service/${row.id}`)}
+        emptyComponent={
+          <EmptyState
+            icon={<LocalShippingIcon />}
+            message="No dispatches found. Create one to get started!"
+          />
+        }
+      />
 
-      {/* ══════════════════════════════════════════════════════
-          CREATE DISPATCH DIALOG
-          ══════════════════════════════════════════════════════ */}
-      <Dialog
-        open={wizardOpen}
-        onClose={resetWizard}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
-      >
-        <DialogTitle sx={{ borderBottom: "1px solid", borderColor: "divider", pb: 2 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#1e293b" }}>
-            Create New Dispatch
-          </Typography>
-        </DialogTitle>
+      {/* Form dialog */}
+      <DispatchFormDialog
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        onSubmit={handleFormSubmit}
+        dispatch={editing}
+        loading={saving}
+      />
 
-        <DialogContent sx={{ pt: 3 }}>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3, mt: 1 }}>
-            <TextField
-              label="Order ID"
-              value={formData.orderId}
-              onChange={handleInputChange("orderId")}
-              size="small"
-              fullWidth
-              required
-            />
-            <Box sx={{ display: "flex", gap: 2 }}>
-              <TextField
-                label="Vehicle ID"
-                value={formData.vehicleId}
-                onChange={handleInputChange("vehicleId")}
-                size="small"
-                fullWidth
-                required
-              />
-              <TextField
-                label="Driver ID"
-                value={formData.driverId}
-                onChange={handleInputChange("driverId")}
-                size="small"
-                fullWidth
-                required
-              />
-            </Box>
-            <TextField
-              select
-              label="Status"
-              value={formData.status}
-              onChange={handleInputChange("status")}
-              size="small"
-              fullWidth
-            >
-              {Object.keys(STATUS_MAP).map((status) => (
-                <MenuItem key={status} value={status}>
-                  {STATUS_MAP[status].label}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              label="Route Details"
-              value={formData.routeDetails}
-              onChange={handleInputChange("routeDetails")}
-              size="small"
-              fullWidth
-              multiline
-              rows={2}
-            />
-            <TextField
-              label="Delivery Notes"
-              value={formData.deliveryNotes}
-              onChange={handleInputChange("deliveryNotes")}
-              size="small"
-              fullWidth
-              multiline
-              rows={2}
-            />
-          </Box>
-        </DialogContent>
+      {/* Confirm delete dialog */}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete Dispatch"
+        message={`Are you sure you want to delete dispatch "${shortId(deleteTarget?.id)}"? This action cannot be undone.`}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        loading={deleting}
+      />
 
-        <DialogActions sx={{ p: 2.5, borderTop: "1px solid", borderColor: "divider" }}>
-          <Button onClick={resetWizard} sx={{ color: "#64748b", textTransform: "none" }}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCreateDispatch}
-            variant="contained"
-            disabled={submitting}
-            sx={{
-              bgcolor: "#6366f1",
-              fontWeight: 600,
-              textTransform: "none",
-              "&:hover": { bgcolor: "#4f46e5" },
-            }}
-          >
-            {submitting ? "Submitting…" : "Create Dispatch"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ══════════════════════════════════════════════════════
-          DELETE CONFIRMATION DIALOG
-          ══════════════════════════════════════════════════════ */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        maxWidth="xs"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
-      >
-        <DialogTitle sx={{ pb: 1 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#1e293b" }}>
-            Confirm Deletion
-          </Typography>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ color: "#64748b" }}>
-            Are you sure you want to delete this dispatch? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5 }}>
-          <Button
-            onClick={() => setDeleteDialogOpen(false)}
-            sx={{ color: "#64748b", textTransform: "none" }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleDeleteDispatch}
-            variant="contained"
-            color="error"
-            disabled={deleting}
-            sx={{ fontWeight: 600, textTransform: "none" }}
-          >
-            {deleting ? "Deleting..." : "Delete"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ── Toast ── */}
-      <Snackbar
+      {/* Toast notifications */}
+      <Toast
         open={toast.open}
-        autoHideDuration={4000}
-        onClose={() => setToast((t) => ({ ...t, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert
-          onClose={() => setToast((t) => ({ ...t, open: false }))}
-          severity={toast.severity}
-          variant="filled"
-          sx={{ width: "100%" }}
-        >
-          {toast.msg}
-        </Alert>
-      </Snackbar>
+        message={toast.message}
+        severity={toast.severity}
+        onClose={() => setToast({ ...toast, open: false })}
+      />
     </Box>
   );
 }

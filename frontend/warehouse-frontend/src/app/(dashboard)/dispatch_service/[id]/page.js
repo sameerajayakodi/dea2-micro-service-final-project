@@ -1,246 +1,439 @@
 "use client";
 
-import { useEffect, useState, use, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import {
-  Box,
-  Button,
-  Chip,
-  IconButton,
-  Paper,
-  Typography,
-  TextField,
-  MenuItem,
-  Snackbar,
-  Alert,
-  Divider,
-} from "@mui/material";
+import { useEffect, useState, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import EditIcon from "@mui/icons-material/Edit";
-import SaveIcon from "@mui/icons-material/Save";
-import RefreshIcon from "@mui/icons-material/Refresh";
+import DeleteIcon from "@mui/icons-material/Delete";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
-import dayjs from "dayjs";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
+import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import RouteIcon from "@mui/icons-material/Route";
+import NotesIcon from "@mui/icons-material/Notes";
+import {
+    Avatar,
+    Box,
+    Button,
+    Chip,
+    Divider,
+    Grid,
+    Paper,
+    Typography,
+} from "@mui/material";
 
-import { getDispatchById, updateDispatch } from "@/services/dispatches/dispatchesApi";
+import DispatchFormDialog from "@/components/dispatch/DispatchFormDialog";
+import {
+    LoadingState,
+    ConfirmDialog,
+    Toast,
+} from "@/components/workforce/shared";
+import {
+    getDispatchById,
+    updateDispatch,
+    deleteDispatch,
+} from "@/services/dispatch";
 
-const STATUS_MAP = {
-  PENDING: { color: "warning", label: "Pending" },
-  IN_TRANSIT: { color: "info", label: "In Transit" },
-  DELIVERED: { color: "success", label: "Delivered" },
-  CANCELLED: { color: "default", label: "Cancelled" },
+/* ---------- Status config ---------- */
+const statusConfig = {
+    PENDING: {
+        label: "Pending",
+        bgcolor: "#fef3c7",
+        color: "#92400e",
+        gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+        icon: <PendingActionsIcon />,
+    },
+    IN_TRANSIT: {
+        label: "In Transit",
+        bgcolor: "#dbeafe",
+        color: "#1e40af",
+        gradient: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+        icon: <LocalShippingOutlinedIcon />,
+    },
+    DELIVERED: {
+        label: "Delivered",
+        bgcolor: "#dcfce7",
+        color: "#166534",
+        gradient: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
+        icon: <CheckCircleOutlineIcon />,
+    },
+    DELAYED: {
+        label: "Delayed",
+        bgcolor: "#fee2e2",
+        color: "#991b1b",
+        gradient: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+        icon: <WarningAmberIcon />,
+    },
 };
 
-const getStatusChipProps = (status) => {
-  const upper = (status ?? "").toUpperCase();
-  return STATUS_MAP[upper] ?? { color: "default", label: status ?? "Unknown" };
+const fmtDate = (dt) => {
+    if (!dt) return "—";
+    const d = new Date(dt);
+    return d.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
 };
 
-export default function DispatchDetailsPage({ params }) {
-  const { id } = use(params);
-  const router = useRouter();
+export default function DispatchDetailPage() {
+    const { id } = useParams();
+    const router = useRouter();
 
-  const [dispatchData, setDispatchData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [formData, setFormData] = useState({});
-  const [saving, setSaving] = useState(false);
+    const [dispatch, setDispatch] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [formOpen, setFormOpen] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [deleteOpen, setDeleteOpen] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [toast, setToast] = useState({
+        open: false,
+        message: "",
+        severity: "success",
+    });
 
-  const [toast, setToast] = useState({ open: false, severity: "success", msg: "" });
+    const fetchDispatch = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await getDispatchById(id);
+            setDispatch(res.data);
+        } catch {
+            setToast({
+                open: true,
+                message: "Failed to load dispatch details",
+                severity: "error",
+            });
+        } finally {
+            setLoading(false);
+        }
+    }, [id]);
 
-  const fetchDispatch = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await getDispatchById(id);
-      setDispatchData(data);
-      setFormData(data);
-    } catch (err) {
-      console.error("Fetch dispatch failed", err);
-      setToast({ open: true, severity: "error", msg: "Failed to load dispatch details" });
-    } finally {
-      setLoading(false);
+    useEffect(() => {
+        fetchDispatch();
+    }, [fetchDispatch]);
+
+    const handleEdit = async (data) => {
+        try {
+            setSaving(true);
+            await updateDispatch(id, data);
+            setToast({
+                open: true,
+                message: "Dispatch updated successfully",
+                severity: "success",
+            });
+            setFormOpen(false);
+            fetchDispatch();
+        } catch (err) {
+            const msg = err.response?.data?.message || "Update failed";
+            setToast({ open: true, message: msg, severity: "error" });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        try {
+            setDeleting(true);
+            await deleteDispatch(id);
+            setToast({
+                open: true,
+                message: "Dispatch deleted",
+                severity: "success",
+            });
+            setTimeout(() => router.push("/dispatch_service"), 800);
+        } catch (err) {
+            const msg = err.response?.data?.message || "Delete failed";
+            setToast({ open: true, message: msg, severity: "error" });
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    if (loading) return <LoadingState message="Loading dispatch details..." />;
+
+    if (!dispatch) {
+        return (
+            <Box sx={{ textAlign: "center", py: 10 }}>
+                <Typography variant="h6" sx={{ color: "#94a3b8" }}>
+                    Dispatch not found.
+                </Typography>
+                <Button
+                    startIcon={<ArrowBackIcon />}
+                    onClick={() => router.push("/dispatch_service")}
+                    sx={{ mt: 2, color: "#6366f1" }}
+                >
+                    Back to Dispatches
+                </Button>
+            </Box>
+        );
     }
-  }, [id]);
 
-  useEffect(() => {
-    fetchDispatch();
-  }, [fetchDispatch]);
+    const cfg = statusConfig[dispatch.status] || statusConfig.PENDING;
 
-  const handleInputChange = (field) => (e) => {
-    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
-  };
+    /* ---------- Detail fields ---------- */
+    const details = [
+        { label: "Dispatch ID", value: dispatch.id, mono: true },
+        { label: "Order ID", value: dispatch.orderId, mono: true },
+        { label: "Vehicle ID", value: dispatch.vehicleId || "Not assigned", mono: true },
+        { label: "Driver ID", value: dispatch.driverId || "Not assigned", mono: true },
+    ];
 
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await updateDispatch(id, {
-        orderId: formData.orderId,
-        vehicleId: formData.vehicleId,
-        driverId: formData.driverId,
-        status: formData.status,
-        routeDetails: formData.routeDetails,
-        deliveryNotes: formData.deliveryNotes,
-      });
-      setToast({ open: true, severity: "success", msg: "Dispatch updated successfully!" });
-      setEditing(false);
-      fetchDispatch();
-    } catch (err) {
-      console.error("Update failed", err);
-      setToast({ open: true, severity: "error", msg: "Failed to update dispatch" });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
     return (
-      <Box sx={{ p: 4 }}>
-        <Typography color="text.secondary">Loading dispatch details...</Typography>
-      </Box>
-    );
-  }
-
-  if (!dispatchData) {
-    return (
-      <Box sx={{ p: 4 }}>
-        <Typography color="error">Dispatch not found.</Typography>
-        <Button startIcon={<ArrowBackIcon />} onClick={() => router.push("/dispatch_service")} sx={{ mt: 2 }}>
-          Back to Dispatches
-        </Button>
-      </Box>
-    );
-  }
-
-  return (
-    <Box>
-      <Box sx={{ mb: 4, display: "flex", gap: 2, alignItems: "center" }}>
-        <IconButton onClick={() => router.push("/dispatch_service")} sx={{ color: "#64748b" }}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Box sx={{ flex: 1 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <LocalShippingIcon sx={{ fontSize: 28, color: "#6366f1" }} />
-            <Typography variant="h4" sx={{ fontWeight: 700, color: "#1e293b" }}>
-              Dispatch Details
-            </Typography>
-            <Chip
-              label={getStatusChipProps(dispatchData.status).label}
-              color={getStatusChipProps(dispatchData.status).color}
-              sx={{ ml: 2, fontWeight: 600 }}
-            />
-          </Box>
-          <Typography variant="body2" sx={{ color: "#64748b", fontFamily: "monospace", mt: 0.5 }}>
-            ID: {dispatchData.id}
-          </Typography>
-        </Box>
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={fetchDispatch}
-          disabled={editing || saving}
-        >
-          Refresh
-        </Button>
-        {editing ? (
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Button variant="outlined" color="inherit" onClick={() => { setEditing(false); setFormData(dispatchData); }} disabled={saving}>
-              Cancel
-            </Button>
-            <Button variant="contained" color="primary" startIcon={<SaveIcon />} onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Save Changes"}
-            </Button>
-          </Box>
-        ) : (
-          <Button variant="contained" startIcon={<EditIcon />} onClick={() => setEditing(true)}>
-            Edit Dispatch
-          </Button>
-        )}
-      </Box>
-
-      <Paper elevation={0} sx={{ p: 4, borderRadius: 3, border: "1px solid", borderColor: "divider" }}>
-        <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-          Dispatch Information
-        </Typography>
-
-        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 4 }}>
-          {/* Read-only / Form fields */}
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <TextField
-              label="Order ID"
-              value={editing ? formData.orderId : dispatchData.orderId}
-              onChange={handleInputChange("orderId")}
-              disabled={!editing}
-              fullWidth
-              InputProps={{ readOnly: !editing }}
-            />
-            <TextField
-              label="Vehicle ID"
-              value={editing ? formData.vehicleId : dispatchData.vehicleId}
-              onChange={handleInputChange("vehicleId")}
-              disabled={!editing}
-              fullWidth
-              InputProps={{ readOnly: !editing }}
-            />
-            <TextField
-              label="Driver ID"
-              value={editing ? formData.driverId : dispatchData.driverId}
-              onChange={handleInputChange("driverId")}
-              disabled={!editing}
-              fullWidth
-              InputProps={{ readOnly: !editing }}
-            />
-            <TextField
-              select={editing}
-              label="Status"
-              value={editing ? formData.status : getStatusChipProps(dispatchData.status).label}
-              onChange={handleInputChange("status")}
-              disabled={!editing}
-              fullWidth
-              InputProps={{ readOnly: !editing }}
+        <Box>
+            {/* Back button */}
+            <Button
+                startIcon={<ArrowBackIcon />}
+                onClick={() => router.push("/dispatch_service")}
+                sx={{
+                    mb: 2,
+                    color: "#64748b",
+                    fontWeight: 500,
+                    textTransform: "none",
+                    "&:hover": { bgcolor: "#f1f5f9" },
+                }}
             >
-              {editing && Object.keys(STATUS_MAP).map((status) => (
-                <MenuItem key={status} value={status}>
-                  {STATUS_MAP[status].label}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Box>
+                Back to Dispatches
+            </Button>
 
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <TextField
-              label="Route Details"
-              value={editing ? formData.routeDetails : dispatchData.routeDetails || "No route details"}
-              onChange={handleInputChange("routeDetails")}
-              disabled={!editing}
-              fullWidth
-              multiline
-              rows={4}
-              InputProps={{ readOnly: !editing }}
+            {/* Top section: Status hero + actions */}
+            <Paper
+                elevation={0}
+                sx={{
+                    p: 0,
+                    borderRadius: 3,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    overflow: "hidden",
+                    mb: 3,
+                }}
+            >
+                {/* Gradient header bar */}
+                <Box
+                    sx={{
+                        background: cfg.gradient,
+                        px: 4,
+                        py: 3,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: 2,
+                    }}
+                >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <Avatar
+                            sx={{
+                                bgcolor: "rgba(255,255,255,0.2)",
+                                width: 52,
+                                height: 52,
+                            }}
+                        >
+                            <LocalShippingIcon sx={{ color: "#fff", fontSize: 28 }} />
+                        </Avatar>
+                        <Box>
+                            <Typography
+                                variant="h5"
+                                sx={{ color: "#fff", fontWeight: 700 }}
+                            >
+                                Dispatch Details
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                sx={{ color: "rgba(255,255,255,0.8)", fontFamily: "monospace" }}
+                            >
+                                {dispatch.id}
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Chip
+                        icon={cfg.icon}
+                        label={cfg.label}
+                        sx={{
+                            bgcolor: "rgba(255,255,255,0.2)",
+                            color: "#fff",
+                            fontWeight: 700,
+                            fontSize: "0.875rem",
+                            height: 36,
+                            backdropFilter: "blur(4px)",
+                            "& .MuiChip-icon": { color: "#fff" },
+                        }}
+                    />
+                </Box>
+
+                {/* Content */}
+                <Box sx={{ p: 4 }}>
+                    {/* Action buttons */}
+                    <Box
+                        sx={{
+                            display: "flex",
+                            gap: 1.5,
+                            mb: 3,
+                            justifyContent: "flex-end",
+                        }}
+                    >
+                        <Button
+                            variant="outlined"
+                            startIcon={<EditIcon />}
+                            onClick={() => setFormOpen(true)}
+                            sx={{
+                                borderColor: "#6366f1",
+                                color: "#6366f1",
+                                "&:hover": { bgcolor: "#ede9fe", borderColor: "#4f46e5" },
+                            }}
+                        >
+                            Edit
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            startIcon={<DeleteIcon />}
+                            onClick={() => setDeleteOpen(true)}
+                            sx={{
+                                borderColor: "#ef4444",
+                                color: "#ef4444",
+                                "&:hover": { bgcolor: "#fef2f2", borderColor: "#dc2626" },
+                            }}
+                        >
+                            Delete
+                        </Button>
+                    </Box>
+
+                    {/* Detail grid */}
+                    <Grid container spacing={3}>
+                        {details.map((d) => (
+                            <Grid size={{ xs: 12, sm: 6 }} key={d.label}>
+                                <Typography
+                                    variant="body2"
+                                    sx={{ color: "#94a3b8", fontWeight: 500, mb: 0.5 }}
+                                >
+                                    {d.label}
+                                </Typography>
+                                <Typography
+                                    variant="body1"
+                                    sx={{
+                                        fontWeight: 500,
+                                        color: "#1e293b",
+                                        ...(d.mono && {
+                                            fontFamily: "monospace",
+                                            fontSize: "0.85rem",
+                                        }),
+                                        wordBreak: "break-all",
+                                    }}
+                                >
+                                    {d.value}
+                                </Typography>
+                            </Grid>
+                        ))}
+                    </Grid>
+
+                    <Divider sx={{ my: 3 }} />
+
+                    {/* Route & Notes */}
+                    <Grid container spacing={3}>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                                <RouteIcon sx={{ color: "#6366f1", fontSize: 20 }} />
+                                <Typography
+                                    variant="subtitle2"
+                                    sx={{ color: "#475569", fontWeight: 600 }}
+                                >
+                                    Route Details
+                                </Typography>
+                            </Box>
+                            <Paper
+                                variant="outlined"
+                                sx={{
+                                    p: 2,
+                                    borderRadius: 2,
+                                    bgcolor: "#f8fafc",
+                                    minHeight: 80,
+                                }}
+                            >
+                                <Typography variant="body2" sx={{ color: "#334155", whiteSpace: "pre-wrap" }}>
+                                    {dispatch.routeDetails || "No route details provided."}
+                                </Typography>
+                            </Paper>
+                        </Grid>
+                        <Grid size={{ xs: 12, md: 6 }}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                                <NotesIcon sx={{ color: "#6366f1", fontSize: 20 }} />
+                                <Typography
+                                    variant="subtitle2"
+                                    sx={{ color: "#475569", fontWeight: 600 }}
+                                >
+                                    Delivery Notes
+                                </Typography>
+                            </Box>
+                            <Paper
+                                variant="outlined"
+                                sx={{
+                                    p: 2,
+                                    borderRadius: 2,
+                                    bgcolor: "#f8fafc",
+                                    minHeight: 80,
+                                }}
+                            >
+                                <Typography variant="body2" sx={{ color: "#334155", whiteSpace: "pre-wrap" }}>
+                                    {dispatch.deliveryNotes || "No delivery notes provided."}
+                                </Typography>
+                            </Paper>
+                        </Grid>
+                    </Grid>
+
+                    <Divider sx={{ my: 3 }} />
+
+                    {/* Timestamps */}
+                    <Grid container spacing={3}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                <AccessTimeIcon sx={{ color: "#94a3b8", fontSize: 18 }} />
+                                <Typography variant="body2" sx={{ color: "#94a3b8" }}>
+                                    Created: {fmtDate(dispatch.createdAt)}
+                                </Typography>
+                            </Box>
+                        </Grid>
+                        <Grid size={{ xs: 12, sm: 6 }}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                <AccessTimeIcon sx={{ color: "#94a3b8", fontSize: 18 }} />
+                                <Typography variant="body2" sx={{ color: "#94a3b8" }}>
+                                    Updated: {fmtDate(dispatch.updatedAt)}
+                                </Typography>
+                            </Box>
+                        </Grid>
+                    </Grid>
+                </Box>
+            </Paper>
+
+            {/* Edit Dialog */}
+            <DispatchFormDialog
+                open={formOpen}
+                onClose={() => setFormOpen(false)}
+                onSubmit={handleEdit}
+                dispatch={dispatch}
+                loading={saving}
             />
-            <TextField
-              label="Delivery Notes"
-              value={editing ? formData.deliveryNotes : dispatchData.deliveryNotes || "No delivery notes"}
-              onChange={handleInputChange("deliveryNotes")}
-              disabled={!editing}
-              fullWidth
-              multiline
-              rows={4}
-              InputProps={{ readOnly: !editing }}
+
+            {/* Confirm Delete */}
+            <ConfirmDialog
+                open={deleteOpen}
+                title="Delete Dispatch"
+                message="Are you sure you want to delete this dispatch? This action cannot be undone."
+                onConfirm={handleDelete}
+                onCancel={() => setDeleteOpen(false)}
+                loading={deleting}
             />
-          </Box>
+
+            {/* Toast */}
+            <Toast
+                open={toast.open}
+                message={toast.message}
+                severity={toast.severity}
+                onClose={() => setToast({ ...toast, open: false })}
+            />
         </Box>
-      </Paper>
-
-      <Snackbar
-        open={toast.open}
-        autoHideDuration={4000}
-        onClose={() => setToast((t) => ({ ...t, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-      >
-        <Alert severity={toast.severity} variant="filled" sx={{ width: "100%" }}>
-          {toast.msg}
-        </Alert>
-      </Snackbar>
-    </Box>
-  );
+    );
 }

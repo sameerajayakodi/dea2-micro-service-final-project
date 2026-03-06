@@ -4,20 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c7a336ce-32c6-43bf-8048-278e04acf054" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/Picking &amp; Packing Service/.gitattributes" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/Picking &amp; Packing Service/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/Picking &amp; Packing Service/.mvn/wrapper/maven-wrapper.properties" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/Picking &amp; Packing Service/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/Picking &amp; Packing Service/mvnw" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/Picking &amp; Packing Service/mvnw.cmd" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/Picking &amp; Packing Service/pom.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/Picking &amp; Packing Service/src/main/java/com/wms/picking_packing_service/PickingPackingServiceApplication.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/Picking &amp; Packing Service/src/main/resources/application.properties" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/Picking &amp; Packing Service/src/test/java/com/wms/picking_packing_service/PickingPackingServiceApplicationTests.java" beforeDir="false" />
-    </list>
+    <list default="true" id="c7a336ce-32c6-43bf-8048-278e04acf054" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -44,7 +31,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "dispatch",
     "ignore.virus.scanning.warn.message": "true",
     "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
