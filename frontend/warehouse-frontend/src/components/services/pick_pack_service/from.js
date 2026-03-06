@@ -10,6 +10,7 @@ import {
   DialogTitle,
   Grid,
   IconButton,
+  MenuItem,
   Stack,
   TextField,
   Typography,
@@ -17,6 +18,9 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useEffect, useState } from "react";
+import { getAllOrders } from "@/services/orders/ordersApi";
+import { getAllWorkers } from "@/services/workforce/workersApi";
+import { getAllProducts } from "@/services/products/productsApi";
 
 const buildEmptyItem = () => ({
   itemId: "",
@@ -30,9 +34,18 @@ const buildInitialState = () => ({
   items: [buildEmptyItem()],
 });
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const isUuid = (value) => UUID_REGEX.test(String(value || ""));
+
 export default function PickPackFormDialog({ open, loading, onClose, onSubmit }) {
   const [form, setForm] = useState(buildInitialState());
   const [errors, setErrors] = useState({});
+  const [orders, setOrders] = useState([]);
+  const [workers, setWorkers] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [listLoading, setListLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -41,8 +54,125 @@ export default function PickPackFormDialog({ open, loading, onClose, onSubmit })
     }
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    let mounted = true;
+
+    const loadData = async () => {
+      try {
+        setListLoading(true);
+        const [ordersRes, workersRes, productsRes] = await Promise.all([
+          getAllOrders(),
+          getAllWorkers(),
+          getAllProducts(),
+        ]);
+
+        if (!mounted) return;
+
+        const orderList = Array.isArray(ordersRes?.data)
+          ? ordersRes.data
+          : Array.isArray(ordersRes?.data?.content)
+            ? ordersRes.data.content
+            : [];
+
+        const workerList = Array.isArray(workersRes?.data)
+          ? workersRes.data
+          : Array.isArray(workersRes?.data?.content)
+            ? workersRes.data.content
+            : [];
+
+        const productList = Array.isArray(productsRes?.data)
+          ? productsRes.data
+          : Array.isArray(productsRes?.data?.content)
+            ? productsRes.data.content
+            : [];
+
+        setOrders(orderList);
+        setWorkers(workerList);
+        setProducts(productList);
+      } finally {
+        if (mounted) setListLoading(false);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [open]);
+
+  const selectedOrder = orders.find((order) => String(order?.id) === String(form.orderId));
+
+  const productLookup = products.reduce((acc, product) => {
+    if (product?.id !== undefined && product?.id !== null) {
+      acc[String(product.id)] = product;
+    }
+    return acc;
+  }, {});
+
+  const productBySku = products.reduce((acc, product) => {
+    if (product?.sku) {
+      acc[String(product.sku)] = product;
+    }
+    return acc;
+  }, {});
+
+  const rawOrderItems =
+    (Array.isArray(selectedOrder?.items) && selectedOrder.items) ||
+    (Array.isArray(selectedOrder?.orderItems) && selectedOrder.orderItems) ||
+    (Array.isArray(selectedOrder?.orderLines) && selectedOrder.orderLines) ||
+    (Array.isArray(selectedOrder?.lines) && selectedOrder.lines) ||
+    [];
+
+  const orderItemOptions = rawOrderItems
+    .map((item) => {
+      const rawItemId = item?.itemId;
+      const rawProductId = item?.productId ?? item?.product?.id ?? item?.product?.productId;
+      const rawSku = item?.sku ?? item?.productSku ?? item?.product?.sku;
+
+      const productById =
+        productLookup[String(rawProductId ?? "")] ||
+        productLookup[String(rawItemId ?? "")] ||
+        productLookup[String(item?.id ?? "")];
+
+      const product = productById || productBySku[String(rawSku ?? "")];
+
+      const resolvedUuid =
+        (product?.id && isUuid(product.id) && String(product.id)) ||
+        (rawProductId && isUuid(rawProductId) && String(rawProductId)) ||
+        (rawItemId && isUuid(rawItemId) && String(rawItemId)) ||
+        null;
+
+      if (!resolvedUuid) return null;
+
+      const labelSku = product?.sku || rawSku || "";
+      const labelName = product?.name || item?.productName || item?.product?.name || "";
+      const label =
+        labelSku && labelName
+          ? `${labelSku} - ${labelName}`
+          : labelSku || labelName || resolvedUuid;
+
+      return {
+        value: resolvedUuid,
+        label,
+      };
+    })
+    .filter(Boolean)
+    .filter((option, index, arr) => arr.findIndex((x) => x.value === option.value) === index);
+
   const handleChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      if (field === "orderId") {
+        return {
+          ...prev,
+          orderId: value,
+          items: prev.items.map((item) => ({ ...item, itemId: "" })),
+        };
+      }
+      return { ...prev, [field]: value };
+    });
   };
 
   const handleItemChange = (index, field, value) => {
@@ -72,17 +202,17 @@ export default function PickPackFormDialog({ open, loading, onClose, onSubmit })
     const nextErrors = {};
 
     if (!String(form.orderId).trim()) {
-      nextErrors.orderId = "Order ID is required";
+      nextErrors.orderId = "Order is required";
     }
 
     const worker = Number(form.workerId);
     if (!String(form.workerId).trim() || Number.isNaN(worker) || worker <= 0) {
-      nextErrors.workerId = "Worker ID must be a valid positive number";
+      nextErrors.workerId = "Worker is required";
     }
 
     form.items.forEach((item, index) => {
       if (!String(item.itemId).trim()) {
-        nextErrors[`itemId-${index}`] = "Item ID is required";
+        nextErrors[`itemId-${index}`] = "Item is required";
       }
 
       const quantityToPick = Number(item.quantityToPick);
@@ -122,30 +252,48 @@ export default function PickPackFormDialog({ open, loading, onClose, onSubmit })
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
+                select
                 fullWidth
-                label="Order ID"
+                label="Order"
                 value={form.orderId}
                 onChange={(e) => handleChange("orderId", e.target.value)}
                 error={!!errors.orderId}
                 helperText={errors.orderId}
-              />
+                disabled={loading || listLoading}
+              >
+                {orders.map((order) => (
+                  <MenuItem key={order.id} value={String(order.id)}>
+                    {order.orderNumber || String(order.id)}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Grid>
 
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
+                select
                 fullWidth
-                type="number"
-                label="Worker ID"
+                label="Worker"
                 value={form.workerId}
                 onChange={(e) => handleChange("workerId", e.target.value)}
                 error={!!errors.workerId}
                 helperText={errors.workerId}
-                slotProps={{
-                  htmlInput: {
-                    min: 1,
-                  },
-                }}
-              />
+                disabled={loading || listLoading}
+              >
+                {workers.map((worker) => (
+                  <MenuItem key={worker.id} value={String(worker.id)}>
+                    {worker.name || worker.fullName || worker.employeeCode || String(worker.id)}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            <Grid size={12}>
+              {form.orderId && orderItemOptions.length === 0 ? (
+                <Typography variant="caption" sx={{ color: "#dc2626" }}>
+                  Selected order has no items available for picking.
+                </Typography>
+              ) : null}
             </Grid>
 
             <Grid size={12}>
@@ -173,13 +321,21 @@ export default function PickPackFormDialog({ open, loading, onClose, onSubmit })
                     <Grid container spacing={1.5} alignItems="center">
                       <Grid size={{ xs: 12, sm: 4 }}>
                         <TextField
+                          select
                           fullWidth
-                          label="Item ID"
+                          label="Item"
                           value={item.itemId}
                           onChange={(e) => handleItemChange(index, "itemId", e.target.value)}
                           error={!!errors[`itemId-${index}`]}
                           helperText={errors[`itemId-${index}`]}
-                        />
+                          disabled={!form.orderId || loading || listLoading || orderItemOptions.length === 0}
+                        >
+                          {orderItemOptions.map((option) => (
+                            <MenuItem key={option.value} value={option.value}>
+                              {option.label}
+                            </MenuItem>
+                          ))}
+                        </TextField>
                       </Grid>
 
                       <Grid size={{ xs: 12, sm: 3 }}>

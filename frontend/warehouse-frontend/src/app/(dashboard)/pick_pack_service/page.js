@@ -38,6 +38,8 @@ import {
   startPicking,
   updatePickQuantity,
 } from "@/services/pick_pack";
+import { getAllOrders } from "@/services/orders/ordersApi";
+import { getAllWorkers } from "@/services/workforce/workersApi";
 
 const getRowId = (row) => row.pickPackId ?? row.id;
 
@@ -226,6 +228,8 @@ export default function PickPackServicePage() {
   const [workflowLoading, setWorkflowLoading] = useState(false);
   const [pickQtyTarget, setPickQtyTarget] = useState(null);
   const [packingTarget, setPackingTarget] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [workers, setWorkers] = useState([]);
   const [toast, setToast] = useState({
     open: false,
     message: "",
@@ -256,6 +260,66 @@ export default function PickPackServicePage() {
   useEffect(() => {
     fetchRows();
   }, [fetchRows]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchLookups = async () => {
+      try {
+        const [ordersRes, workersRes] = await Promise.all([getAllOrders(), getAllWorkers()]);
+
+        if (!mounted) return;
+
+        const orderList = Array.isArray(ordersRes?.data)
+          ? ordersRes.data
+          : Array.isArray(ordersRes?.data?.content)
+            ? ordersRes.data.content
+            : [];
+
+        const workerList = Array.isArray(workersRes?.data)
+          ? workersRes.data
+          : Array.isArray(workersRes?.data?.content)
+            ? workersRes.data.content
+            : [];
+
+        setOrders(orderList);
+        setWorkers(workerList);
+      } catch {
+        if (!mounted) return;
+        setOrders([]);
+        setWorkers([]);
+      }
+    };
+
+    fetchLookups();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const orderMap = useMemo(
+    () =>
+      orders.reduce((acc, order) => {
+        if (order?.id !== undefined && order?.id !== null) {
+          acc[String(order.id)] = order.orderNumber || String(order.id);
+        }
+        return acc;
+      }, {}),
+    [orders],
+  );
+
+  const workerMap = useMemo(
+    () =>
+      workers.reduce((acc, worker) => {
+        if (worker?.id !== undefined && worker?.id !== null) {
+          acc[String(worker.id)] =
+            worker.name || worker.fullName || worker.employeeCode || String(worker.id);
+        }
+        return acc;
+      }, {}),
+    [workers],
+  );
 
   const handleCreate = () => {
     setFormOpen(true);
@@ -393,15 +457,15 @@ export default function PickPackServicePage() {
     () => [
       {
         id: "orderId",
-        label: "Order ID",
+        label: "Order",
         sortable: true,
-        render: (row) => row.orderId || "—",
+        render: (row) => orderMap[String(row.orderId)] || row.orderId || "—",
       },
       {
         id: "workerId",
-        label: "Worker ID",
+        label: "Worker",
         sortable: true,
-        render: (row) => row.workerId || "—",
+        render: (row) => workerMap[String(row.workerId)] || row.workerId || "—",
       },
       {
         id: "status",
@@ -439,7 +503,7 @@ export default function PickPackServicePage() {
         render: (row) => renderWorkflowActions(row),
       },
     ],
-    [workflowLoading],
+    [orderMap, workerMap, workflowLoading],
   );
 
   if (loading) return <LoadingState message="Loading Pick & Pack tasks..." />;
