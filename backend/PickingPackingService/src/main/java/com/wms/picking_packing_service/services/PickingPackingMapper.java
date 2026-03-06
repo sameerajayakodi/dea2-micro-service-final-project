@@ -1,7 +1,8 @@
 package com.wms.picking_packing_service.services;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component;
 import com.wms.picking_packing_service.dto.PackingDetailsDTO;
 import com.wms.picking_packing_service.dto.PickingItemDTO;
 import com.wms.picking_packing_service.dto.PickingPackingDTO;
+import com.wms.picking_packing_service.exception.BadRequestException;
 import com.wms.picking_packing_service.models.PackingDetails;
 import com.wms.picking_packing_service.models.PickingItem;
 import com.wms.picking_packing_service.models.PickingPacking;
@@ -80,26 +82,38 @@ public class PickingPackingMapper {
             return;
         }
 
-        if (entity.getItems() != null) {
-            entity.getItems().clear();
-        } else {
-            entity.setItems(new ArrayList<>());
+        List<PickingItem> existingItems = entity.getItems();
+        if (existingItems == null || existingItems.isEmpty()) {
+            if (!itemDTOs.isEmpty()) {
+                throw new BadRequestException("Update cannot create new picking items. Create the task with items first.");
+            }
+            return;
         }
 
-        List<PickingItem> items = itemDTOs.stream()
-                .map(itemDTO -> {
-                    PickingItem item = new PickingItem();
-                    item.setItemId(itemDTO.getItemId());
-                    item.setQuantityToPick(itemDTO.getQuantityToPick());
-                    Integer quantityPicked = itemDTO.getQuantityPicked();
-                    item.setQuantityPicked(quantityPicked != null ? quantityPicked : 0);
-                    item.setBinNo(itemDTO.getBinNo());
-                    item.setPickingPacking(entity);
-                    return item;
-                })
-                .collect(Collectors.toList());
+        Map<UUID, PickingItem> existingByItemId = existingItems.stream()
+                .collect(Collectors.toMap(PickingItem::getItemId, item -> item, (first, second) -> first));
 
-        entity.getItems().addAll(items);
+        for (PickingItemDTO itemDTO : itemDTOs) {
+            UUID itemId = itemDTO.getItemId();
+            if (itemId == null) {
+                throw new BadRequestException("itemId is required for item updates");
+            }
+
+            PickingItem existingItem = existingByItemId.get(itemId);
+            if (existingItem == null) {
+                throw new BadRequestException("Update cannot create new item: " + itemId);
+            }
+
+            if (itemDTO.getQuantityToPick() != null) {
+                existingItem.setQuantityToPick(itemDTO.getQuantityToPick());
+            }
+            if (itemDTO.getQuantityPicked() != null) {
+                existingItem.setQuantityPicked(itemDTO.getQuantityPicked());
+            }
+            if (itemDTO.getBinNo() != null) {
+                existingItem.setBinNo(itemDTO.getBinNo());
+            }
+        }
     }
 
     public void replacePackingDetails(PickingPacking entity, List<PackingDetailsDTO> packingDTOs) {
@@ -107,23 +121,31 @@ public class PickingPackingMapper {
             return;
         }
 
-        if (entity.getPackingDetails() != null) {
-            entity.getPackingDetails().clear();
-        } else {
-            entity.setPackingDetails(new ArrayList<>());
+        List<PackingDetails> existingPackingDetails = entity.getPackingDetails();
+        if (existingPackingDetails == null || existingPackingDetails.isEmpty()) {
+            if (!packingDTOs.isEmpty()) {
+                throw new BadRequestException("Update cannot create new packing details.");
+            }
+            return;
         }
 
-        List<PackingDetails> packingDetails = packingDTOs.stream()
-                .map(packingDTO -> {
-                    PackingDetails details = new PackingDetails();
-                    details.setPackingType(packingDTO.getPackingType());
-                    details.setWeight(packingDTO.getWeight());
-                    details.setDimensions(packingDTO.getDimensions());
-                    details.setPickingPacking(entity);
-                    return details;
-                })
-                .collect(Collectors.toList());
+        if (packingDTOs.size() > existingPackingDetails.size()) {
+            throw new BadRequestException("Update cannot create new packing details.");
+        }
 
-        entity.getPackingDetails().addAll(packingDetails);
+        for (int index = 0; index < packingDTOs.size(); index++) {
+            PackingDetailsDTO packingDTO = packingDTOs.get(index);
+            PackingDetails existingDetails = existingPackingDetails.get(index);
+
+            if (packingDTO.getPackingType() != null) {
+                existingDetails.setPackingType(packingDTO.getPackingType());
+            }
+            if (packingDTO.getWeight() != null) {
+                existingDetails.setWeight(packingDTO.getWeight());
+            }
+            if (packingDTO.getDimensions() != null) {
+                existingDetails.setDimensions(packingDTO.getDimensions());
+            }
+        }
     }
 }
