@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: 'workforce-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['workforce-service:8080']
+        labels:
+          application: 'WORKFORCE-EQUIPMENT-SERVICE'

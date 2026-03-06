@@ -1,0 +1,36 @@
+name: Deploy Backend to Azure VM
+
+on:
+  push:
+    branches:
+      - deploy-nipun
+    paths:
+      - "backend/Workforce & Equipment Service/**"
+
+jobs:
+  build-and-deploy:
+    runs-on: [self-hosted, azure-vm]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build and Deploy with Docker Compose
+        run: |
+          cd "backend/Workforce & Equipment Service"
+          echo "DB_URL=${{ secrets.DB_URL }}" > .env
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "ZIPKIN_URL=http://zipkin:9411" >> .env
+          echo "LOKI_URL=http://loki:3100" >> .env
+          chmod 600 .env
+
+          sudo docker stop workforce-service || true
+          sudo docker rm workforce-service || true
+
+          sudo docker compose down || true
+
+          sudo docker compose up -d --build
+
+      - name: Cleanup old Docker images
+        run: sudo docker image prune -f

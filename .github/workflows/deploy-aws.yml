@@ -1,0 +1,46 @@
+name: Deploy API Gateway and Eureka Server to AZURE
+
+on:
+  push:
+    branches:
+      - deploy-nipun
+    paths:
+      - "backend/API Gateway/**"
+      - "backend/Eureka Server/**"
+
+jobs:
+  build-and-deploy:
+    runs-on: [self-hosted, gateway]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "corretto"
+
+      - name: Build Eureka Server with Maven
+        working-directory: "backend/Eureka Server"
+        run: mvn clean package -DskipTests
+
+      - name: Build API Gateway with Maven
+        working-directory: "backend/API Gateway"
+        run: mvn clean package -DskipTests
+
+      - name: Deploy and Restart Applications
+        run: |
+          # 1. Create the deployment directories in the runner's home directory
+          mkdir -p $HOME/eureka-server
+          mkdir -p $HOME/api-gateway
+
+          # 2. Copy the .jar files (ensure paths with spaces are quoted)
+          cp "backend/Eureka Server/target/"*.jar $HOME/eureka-server/application.jar
+          cp "backend/API Gateway/target/"*.jar $HOME/api-gateway/application.jar
+
+          # 3. Restart the systemd services
+          # Note: Adjust the service names below if they differ on your EC2 instance
+          sudo systemctl restart eureka-server.service
+          sudo systemctl restart api-gateway.service

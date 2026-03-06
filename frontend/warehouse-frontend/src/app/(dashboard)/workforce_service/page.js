@@ -9,6 +9,7 @@ import CategoryIcon from "@mui/icons-material/Category";
 import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 import HandymanIcon from "@mui/icons-material/Handyman";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import {
@@ -69,6 +70,14 @@ const sections = [
     icon: <LocationOnIcon />,
     gradient: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)",
     countKey: "storageLocations",
+  },
+  {
+    label: "Order Assignments",
+    description: "Assign supervisors & workers to orders",
+    path: "/workforce_service/order-assignments",
+    icon: <AssignmentIcon />,
+    gradient: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+    countKey: "orderAssignments",
   },
 ];
 

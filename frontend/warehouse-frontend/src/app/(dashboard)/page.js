@@ -10,6 +10,8 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import DnsIcon from "@mui/icons-material/Dns";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import HubIcon from "@mui/icons-material/Hub";
+import RouterIcon from "@mui/icons-material/Router";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import MoveToInboxIcon from "@mui/icons-material/MoveToInbox";
@@ -36,6 +38,13 @@ import {
  * Adjust these if a service registers under a different name.
  */
 const services = [
+  {
+    label: "API Gateway",
+    eurekaName: "API-GATEWAY",
+    href: "#",
+    icon: <RouterIcon />,
+    gradient: "linear-gradient(135deg, #f97316 0%, #ef4444 100%)",
+  },
   {
     label: "Customers",
     eurekaName: "CUSTOMER-MANAGEMENT-SERVICE",
@@ -73,7 +82,7 @@ const services = [
   },
   {
     label: "Pick & Pack",
-    eurekaName: "PICK-PACK-SERVICE",
+    eurekaName: "PICKING-PACKING-SERVICE",
     href: "/pick_pack_service",
     icon: <OutboxIcon />,
     gradient: "linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)",
@@ -263,7 +272,7 @@ export default function DashboardPage() {
         <Stack direction="row" spacing={1} alignItems="center">
           {error && (
             <Chip
-              label="Eureka unreachable"
+              label="Service registry unreachable"
               size="small"
               sx={{
                 bgcolor: "#fef2f2",
