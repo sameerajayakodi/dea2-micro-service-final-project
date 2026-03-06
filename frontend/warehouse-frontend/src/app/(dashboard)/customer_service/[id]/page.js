@@ -172,11 +172,13 @@ export default function CustomerDetailView({ params }) {
 
         setSubmitting(true);
         try {
+            // Strip addressId from each address since the backend AddressRequest DTO doesn't accept it
+            const cleanedAddresses = validAddresses.map(({ addressId, ...rest }) => rest);
             await updateCustomer(id, {
                 customerName: form.customerName,
                 email: form.email,
                 phone: form.phone,
-                addresses: validAddresses,
+                addresses: cleanedAddresses,
             });
             showToast("success", "Customer updated successfully!");
             setEditing(false);
